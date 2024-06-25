@@ -1,0 +1,21 @@
+{
+  "name": "learning_junit",
+  "version": "1.0.0",
+  "description": "Learning JUnit",
+  "private": true,
+  "main": "README.md",
+  "author": "@alxgcrz",
+  "license": "CC-BY-4.0",
+  "homepage": "https://alxgcrz.com/junit.html",
+  "scripts": {
+    "pandoc:create": "pandoc -d custom",
+    "pandoc:copy": "copy %npm_config_filename% %npm_config_html%",
+    "pdf:create": "mdpdf README.md README.pdf",
+    "pdf:copy": "copy README.pdf %npm_config_pdf%",
+    "live": "live-server %npm_config_filename%"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alxgcrz/_learning_junit_.git"
+  }
+}
