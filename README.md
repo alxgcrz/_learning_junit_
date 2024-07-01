@@ -21,67 +21,41 @@ JUnit 5 requiere **Java 8 (o superior)**.
 ## [Writing Tests](https://junit.org/junit5/docs/current/user-guide/#writing-tests)
 
 ```java
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.*;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
-class StandardTests {
-
-    private final Calculator calculator = new Calculator();
+class ExampleTest {
 
     @BeforeAll
-    static void initAll() {
-        // ...
+    static void setupAll() {
+        System.out.println("Ejecutado una vez antes de todas las pruebas.");
     }
 
     @BeforeEach
-    void init() {
-        // ...
+    void setup() {
+        System.out.println("Ejecutado antes de cada prueba.");
     }
 
     @Test
-    void addition() {
-        assertEquals(2, calculator.add(1, 1));
+    void testAddition() {
+        assertEquals(2, 1 + 1, "1 + 1 debe ser igual a 2");
     }
 
     @Test
-    void succeedingTest() {
-    }
-
-    @Test
-    void failingTest() {
-        fail("a failing test");
-    }
-
-    @Test
-    @Disabled("for demonstration purposes")
-    void skippedTest() {
-        // not executed
-    }
-
-    @Test
-    void abortedTest() {
-        assumeTrue("abc".contains("Z"));
-        fail("test should have been aborted");
+    void testSubtraction() {
+        assertEquals(0, 1 - 1, "1 - 1 debe ser igual a 0");
     }
 
     @AfterEach
     void tearDown() {
-        // ...
+        System.out.println("Ejecutado después de cada prueba.");
     }
 
     @AfterAll
     static void tearDownAll() {
-        // ...
+        System.out.println("Ejecutado una vez después de todas las pruebas.");
     }
-
 }
 ```
 
@@ -167,55 +141,235 @@ import org.junit.jupiter.api.Test;
 public @interface FastTest { }
 ```
 
+### [Definitions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-definitions)
+
+- **Container**: un nodo en el árbol de prueba que contiene otros contenedores o pruebas como sus hijos (por ejemplo, una clase de prueba).
+
+- **Test**: un nodo en el árbol de prueba que verifica el comportamiento esperado cuando se ejecuta (por ejemplo, un método `@Test`).
+
+- **Lifecycle Method**: cualquier método que esté directamente anotado o meta-anotado con `@BeforeAll`, `@AfterAll`, `@BeforeEach` o `@AfterEach`.
+
+- **Test Class**: cualquier clase de nivel superior, clase miembro estática o clase `@Nested` que contenga al menos un método de prueba, es decir, un contenedor. Las clases de prueba no deben ser abstractas y deben tener un único constructor.
+
+- **Test Method**: cualquier método de instancia que esté directamente anotado o meta- anotado con `@Test`, `@RepeatedTest`, `@ParameterizedTest`, `@TestFactory` o `@TestTemplate`. Con la excepción de `@Test`, estos crean un contenedor en el árbol de pruebas que agrupa pruebas o, potencialmente (para `@TestFactory`), otros contenedores.
+
 ### [Test Classes and Methods](https://junit.org/junit5/docs/current/user-guide/#writing-tests-classes-and-methods)
 
-TODO
+Los métodos de prueba y los métodos de ciclo de vida pueden ser declarados localmente dentro de la clase de prueba actual, heredados de superclases o heredados de [interfaces](#test-interfaces-and-default-methods). Además, los métodos de prueba y los métodos de ciclo de vida **no deben ser abstractos y no deben retornar un valor** (excepto los métodos `@TestFactory`, que deben retornar un valor).
+
+No es necesario que las clases de prueba, los métodos de prueba y los métodos de ciclo de vida sean `public`, pero **no deben ser privados**.
+
+Generalmente se recomienda omitir el modificador `public` para clases de prueba, métodos de prueba y métodos de ciclo de vida a menos que exista una razón técnica para hacerlo.
+
+Una clase estándard de prueba con todos los métodos del ciclo de vida:
+
+```java
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+class StandardTests {
+
+    @BeforeAll
+    static void initAll() {
+    }
+
+    @BeforeEach
+    void init() {
+    }
+
+    @Test
+    void succeedingTest() {
+    }
+
+    @Test
+    void failingTest() {
+        fail("a failing test");
+    }
+
+    @Test
+    @Disabled("for demonstration purposes")
+    void skippedTest() {
+        // not executed
+    }
+
+    @Test
+    void abortedTest() {
+        assumeTrue("abc".contains("Z"));
+        fail("test should have been aborted");
+    }
+
+    @AfterEach
+    void tearDown() {
+    }
+
+    @AfterAll
+    static void tearDownAll() {
+    }
+
+}
+```
 
 ### [Display Names](https://junit.org/junit5/docs/current/user-guide/#writing-tests-display-names)
 
-TODO
+Las clases de prueba y los métodos de prueba pueden declarar nombres personalizados mediante `@DisplayName`, con espacios, caracteres especiales e incluso emojis, que se mostrarán en los informes de prueba y por los ejecutores de prueba y los IDE:
+
+```java
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+@DisplayName("A special test case")
+class DisplayNameDemo {
+
+    @Test
+    @DisplayName("Custom test name containing spaces")
+    void testWithDisplayNameContainingSpaces() {
+        // ...
+    }
+
+    @Test
+    @DisplayName("╯°□°）╯")
+    void testWithDisplayNameContainingSpecialCharacters() {
+        // ...
+    }
+
+    @Test
+    @DisplayName("😱")
+    void testWithDisplayNameContainingEmoji() {
+        // ...
+    }
+
+}
+```
+
+#### [Display Name Generators](https://junit.org/junit5/docs/current/user-guide/#writing-tests-display-name-generator)
+
+JUnit Jupiter admite generadores de nombres personalizados que se pueden configurar mediante la anotación `@DisplayNameGeneration`. Los valores proporcionados a través de anotaciones `@DisplayName` siempre tienen prioridad sobre los nombres generados por `@DisplayNameGenerator`.
+
+Esta anotación se utiliza para configurar una estrategia global de generación de nombres de visualización (_'display names'_) para todas las pruebas en una clase de prueba. Esto es útil cuando se requiere aplicar una convención de nombres de manera consistente sin tener que especificar `@DisplayName` individualmente en cada método de prueba.
 
 ### [Assertions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-assertions)
 
-Las condiciones de aceptación del test se implementa con las [aserciones](https://junit.org/junit5/docs/current/api/org/junit/jupiter/api/Assertions.html). Las más comunes son los siguientes:
+JUnit Jupiter incluye muchos de los métodos de aserción que tiene JUnit 4 y añade algunos que se prestan bien para ser utilizados con lambdas de Java 8. Todas las aserciones de JUnit Jupiter son métodos estáticos en la clase [org.junit.jupiter.api.Assertions](https://junit.org/junit5/docs/current/api/org.junit.jupiter.api/org/junit/jupiter/api/Assertions.html).
 
-- **assertTrue/assertFalse (condición a testear)**: Comprueba que la condición es cierta o falsa.
-- **assertEquals/assertNotEquals (valor esperado, valor obtenido)**: Es importante el orden de los valores esperado y obtenido.
-- **assertNull/assertNotNull (object)**: Comprueba que el objeto obtenido es nulo o no.
-- **assertSame/assertNotSame(object1, object2)**: Comprueba si dos objetos son iguales o no.
-- **fail()**: Fuerza que el test termine con fallo. Se puede indicar un mensaje.
+Algunos de las aserciones más comunes son los siguientes:
+
+- **assertEquals(expected, actual, message)**
+
+- **assertNotEquals(unexpected, actual, message)**
+
+- **assertTrue(condition, message)**
+
+- **assertFalse(condition, message)**
+
+- **assertNull(object, message)**
+
+- **assertNotNull(object, message)**
+
+- **assertThrows(expectedType, executable)**
+
+- **assertAll(executables...)**
 
 ```java
-class AssertionsTest {
+import org.junit.jupiter.api.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class CommonAssertionsTest {
 
     @Test
-    void standardAssertions() {
-        assertEquals(2, 2);
-        assertEquals(4, 4, "Ahora el mensaje opcional de la aserción es el último parámetro.");
-        assertTrue(2 == 2, () -> "Al usar una lambda para indicar el mensaje, "
-                + "esta se evalúa cuando se va a mostrar (no cuando se ejecuta el assert), "
-                + "de esta manera se evita el tiempo de construir mensajes complejos innecesariamente.");
+    @DisplayName("Prueba de assertEquals y assertNotEquals")
+    void testEquals() {
+        assertEquals(2, 1 + 1, "1 + 1 debe ser igual a 2");
+        assertNotEquals(3, 1 + 1, "1 + 1 no debe ser igual a 3");
     }
 
     @Test
-    void groupedAssertions() {
-        // En un grupo de aserciones se ejecutan todas ellas
-        // y ser reportan todas los fallos juntos
-        assertAll("user",
-            () -> assertEquals("Francisco", user.getFirstName()),
-            () -> assertEquals("Pérez", user.getLastName())
+    @DisplayName("Prueba de assertTrue y assertFalse")
+    void testTrueFalse() {
+        assertTrue(5 > 1, "5 debe ser mayor que 1");
+        assertFalse(5 < 1, "5 no debe ser menor que 1");
+    }
+
+    @Test
+    @DisplayName("Prueba de assertNull y assertNotNull")
+    void testNull() {
+        String nullString = null;
+        String nonNullString = "JUnit";
+        assertNull(nullString, "El objeto debe ser nulo");
+        assertNotNull(nonNullString, "El objeto no debe ser nulo");
+    }
+
+    @Test
+    @DisplayName("Prueba de assertThrows")
+    void testThrows() {
+        assertThrows(ArithmeticException.class, () -> {
+            int result = 1 / 0;
+        }, "Debe lanzar ArithmeticException");
+    }
+
+    @Test
+    @DisplayName("Prueba de assertAll")
+    void testAll() {
+        assertAll("Pruebas de suma",
+            () -> assertEquals(4, 2 + 2, "2 + 2 debe ser igual a 4"),
+            () -> assertTrue(4 > 0, "4 debe ser mayor que 0"),
+            () -> assertFalse(4 < 0, "4 no debe ser menor que 0")
         );
-    }
-
-    @Test
-    void exceptionTesting() {
-        Throwable exception = expectThrows(IllegalArgumentException.class, () -> {
-            throw new IllegalArgumentException("a message");
-        });
-        assertEquals("a message", exception.getMessage());
     }
 }
 ```
+
+#### [Kotlin Assertion Support](https://junit.org/junit5/docs/current/user-guide/#writing-tests-assertions-kotlin)
+
+JUnit Jupiter también viene con algunos métodos de aserción que se prestan bien para ser utilizados en Kotlin. Todas las asercioness de JUnit Jupiter en Kotlin son funciones de nivel superior en el paquete _'org.junit.jupiter.api'_.
+
+#### [Third-party Assertion Libraries](https://junit.org/junit5/docs/current/user-guide/#writing-tests-assertions-third-party)
+
+Aunque las facilidades de aserción proporcionadas por JUnit Jupiter son suficientes para muchos escenarios de prueba, hay ocasiones en las que se desea o se requiere más potencia y funcionalidades adicionales, como los _'matchers'_.
+
+En tales casos, el equipo de JUnit recomienda el uso de bibliotecas de aserción de terceros como [AssertJ](https://assertj.github.io/doc/), [Hamcrest](https://hamcrest.org/JavaHamcrest/), [Truth](https://truth.dev/), etc...:
+
+```java
+import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.*;
+
+public class ExampleTest {
+
+    @Test
+    void testWithAssertJ() {
+        // Given
+        List<Integer> numbers = Arrays.asList(1, 2, 3);
+
+        // Assertions with AssertJ
+        assertThat(numbers).hasSize(3)
+                           .contains(2)
+                           .doesNotContain(4);
+    }
+}
+```
+
+### [Assumptions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-assumptions)
+
+TODO
+
+### [Disabling Tests](https://junit.org/junit5/docs/current/user-guide/#writing-tests-disabling)
+
+TODO
+
+### [Conditional Test Execution](https://junit.org/junit5/docs/current/user-guide/#writing-tests-conditional-execution)
+
+TODO
 
 ### [Tagging and Filtering](https://junit.org/junit5/docs/current/user-guide/#writing-tests-tagging-and-filtering)
 
@@ -240,6 +394,26 @@ class TaggingDemo {
 ```
 
 La sintaxis de las etiquetas debe seguir ciertas [reglas](https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-syntax-rules).
+
+### [Test Execution Order](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order)
+
+TODO
+
+### [Test Instance Lifecycle](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-instance-lifecycle)
+
+TODO
+
+### [Nested Tests](https://junit.org/junit5/docs/current/user-guide/#writing-tests-nested)
+
+TODO
+
+### [Dependency Injection for Constructors and Methods](https://junit.org/junit5/docs/current/user-guide/#writing-tests-dependency-injection)
+
+TODO
+
+### [Test Interfaces and Default Methods](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-interfaces-and-default-methods)
+
+TODO
 
 ---
 
