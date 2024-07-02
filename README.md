@@ -361,13 +361,160 @@ public class ExampleTest {
 
 ### [Assumptions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-assumptions)
 
-TODO
+Los _"assumptions"_ (suposiciones) en JUnit se utilizan para realizar **pruebas condicionales**. Permiten que una prueba se ejecute solo si se cumplen ciertas condiciones. Si la condición no se cumple, la prueba se marca como _"skipped"_ (omitida) en lugar de _"failed"_ (fallida). Esto es útil para situaciones donde la prueba no es relevante o no puede ejecutarse en ciertos entornos o configuraciones.
+
+JUnit Jupiter viene con un subconjunto de los métodos de suposición que JUnit 4 proporciona y añade algunos que se prestan bien para ser utilizados con expresiones lambda y referencias de métodos de Java 8. Todas las suposiciones de JUnit Jupiter son métodos estáticos en la clase `org.junit.jupiter.api.Assumptions`.
+
+Algunas de las más comunes serían:
+
+- **`Assumptions.assumeTrue(condition)`**: la prueba se ejecuta solo si la condición es verdadera.
+
+- **`Assumptions.assumeFalse(condition)`**: la prueba se ejecuta solo si la condición es falsa.
+
+- **`Assumptions.assumeTrue(condition, "Message if condition is false")`**: la prueba se ejecuta solo si la condición es verdadera, con un mensaje si no se cumple.
+
+- **`assumingThat(boolean condition, Executable executable)`**: ejecuta un bloque de código solo si la condición es verdadera.
+
+```java
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumingThat;
+
+import example.util.Calculator;
+
+import org.junit.jupiter.api.Test;
+
+class AssumptionsDemo {
+
+    private final Calculator calculator = new Calculator();
+
+    @Test
+    void testOnlyOnCiServer() {
+        assumeTrue("CI".equals(System.getenv("ENV")));
+        // remainder of test
+    }
+
+    @Test
+    void testOnlyOnDeveloperWorkstation() {
+        assumeTrue("DEV".equals(System.getenv("ENV")),
+            () -> "Aborting test: not on developer workstation");
+        // remainder of test
+    }
+
+    @Test
+    void testInAllEnvironments() {
+        assumingThat("CI".equals(System.getenv("ENV")),
+            () -> {
+                // perform these assertions only on the CI server
+                assertEquals(2, calculator.divide(4, 2));
+            });
+
+        // perform these assertions in all environments
+        assertEquals(42, calculator.multiply(6, 7));
+    }
+
+}
+```
 
 ### [Disabling Tests](https://junit.org/junit5/docs/current/user-guide/#writing-tests-disabling)
 
-TODO
+Se pueden deshabilitar clases de prueba completas o métodos de prueba individuales mediante la anotación `@Disabled`.
+
+Esta anotación puede declararse sin proporcionar un motivo; sin embargo, el equipo de JUnit recomienda que los desarrolladores proporcionen una breve explicación de por qué se ha deshabilitado una clase o método de prueba.
+
+Clase de prueba deshabilitada:
+
+```java
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+@Disabled("Disabled until bug #99 has been fixed")
+class DisabledClassDemo {
+
+    @Test
+    void testWillBeSkipped() {
+    }
+
+}
+```
+
+Método de prueba deshabilitado en una clase de prueba:
+
+```java
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+class DisabledTestsDemo {
+
+    @Disabled("Disabled until bug #42 has been resolved")
+    @Test
+    void testWillBeSkipped() {
+    }
+
+    @Test
+    void testWillBeExecuted() {
+    }
+
+}
+```
+
+Esta anotación `@Disabled` no se hereda, por lo que subclases que hereden de claes deshabilitadas o con métodos deshabilitados deberán redeclarar de nuevo esta anotación.
 
 ### [Conditional Test Execution](https://junit.org/junit5/docs/current/user-guide/#writing-tests-conditional-execution)
+
+La API _"ExecutionCondition"_ en JUnit Jupiter permite a los desarrolladores decidir si un conjunto de pruebas o una prueba individual debe ejecutarse o no, basándose en ciertas condiciones. Estas condiciones pueden ser definidas de forma programática.
+
+Un ejemplo básico de una condición es _"DisabledCondition"_, que se utiliza con la anotación `@Disabled`. Esta anotación se usa para desactivar una prueba, evitando que se ejecute.
+
+Además de esta anotación, JUnit Jupiter incluye varias otras anotaciones en el paquete ['org.junit.jupiter.api.condition'](https://junit.org/junit5/docs/5.2.0/api/org/junit/jupiter/api/condition/package-summary.html) que permiten activar o desactivar pruebas de manera declarativa, es decir, simplemente aplicando una anotación a las pruebas o contenedores de pruebas.
+
+Es recomendable indicar los motivos por los que una prueba está desactivada. Para ello, muchas de estas anotaciones tienen un atributo `disabledReason` donde se puede especificar el motivo.
+
+Cualquiera de las anotaciones condicionales listadas en las secciones siguientes también puede usarse como meta-anotación para crear una anotación compuesta personalizada, como ya se explicó en [meta-anotaciones](#meta-annotations-and-composed-annotations):
+
+```java
+@Test
+@EnabledOnOs(MAC)
+void onlyOnMacOs() {
+    // ...
+}
+
+// Meta-anotación entre '@Test' y '@EnabledOnOs(MAC)'
+@TestOnMac
+void testOnMac() {
+    // ...
+}
+
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+@Test
+@EnabledOnOs(MAC)
+@interface TestOnMac {}
+```
+
+A menos que se indique lo contrario, cada una de las anotaciones condicionales enumeradas en las siguientes secciones **solo puede declararse una vez en una interfaz de prueba, clase de prueba o método de prueba**. Si una anotación condicional está presente directamente, indirectamente o como meta-anotación múltiples veces en un mismo elemento, solo se usará la primera anotación descubierta por JUnit.
+
+#### [Operating System and Architecture Conditions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-conditional-execution-os)
+
+TODO
+
+#### [Java Runtime Environment Conditions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-conditional-execution-jre)
+
+TODO
+
+#### [Native Image Conditions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-conditional-execution-native)
+
+TODO
+
+#### [System Property Conditions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-conditional-execution-system-properties)
+
+TODO
+
+#### [Environment Variable Conditions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-conditional-execution-environment-variables)
+
+TODO
+
+#### [Custom Conditions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-conditional-execution-custom)
 
 TODO
 
@@ -417,9 +564,9 @@ TODO
 
 ---
 
-## Enlaces de interés
+## Referencias
 
-- [JUnit 5](https://junit.org/junit5/)
+- <https://junit.org/junit5/>
 - <https://github.com/junit-team/junit5-samples>
 - <https://www.baeldung.com/junit>
 - <https://www.tutorialspoint.com/junit/index.htm>
