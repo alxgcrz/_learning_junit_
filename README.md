@@ -496,27 +496,245 @@ A menos que se indique lo contrario, cada una de las anotaciones condicionales e
 
 #### [Operating System and Architecture Conditions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-conditional-execution-os)
 
-TODO
+Un contenedor o prueba se puede habilitar o deshabilitar en un sistema operativo, arquitectura o combinación de ambos en particular a través de las anotaciones `@EnabledOnOs` y `@DisabledOnOs`.
+
+Ejecución condicional basada en el **sistema operativo**:
+
+```java
+@Test
+@EnabledOnOs(MAC)
+void onlyOnMacOs() {
+    // ...
+}
+
+@Test
+@EnabledOnOs({ LINUX, MAC })
+void onLinuxOrMac() {
+    // ...
+}
+
+@Test
+@DisabledOnOs(WINDOWS)
+void notOnWindows() {
+    // ...
+}
+```
+
+Ejecución condicional basada en **arquitectura**:
+
+```java
+@Test
+@EnabledOnOs(architectures = "aarch64")
+void onAarch64() {
+    // ...
+}
+
+@Test
+@DisabledOnOs(architectures = "x86_64")
+void notOnX86_64() {
+    // ...
+}
+
+@Test
+@EnabledOnOs(value = MAC, architectures = "aarch64")
+void onNewMacs() {
+    // ...
+}
+
+@Test
+@DisabledOnOs(value = MAC, architectures = "aarch64")
+void notOnNewMacs() {
+    // ...
+}
+```
 
 #### [Java Runtime Environment Conditions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-conditional-execution-jre)
 
-TODO
+Un contenedor o prueba puede habilitarse o deshabilitarse en versiones particulares del Entorno de Ejecución de Java (JRE) mediante las anotaciones `@EnabledOnJre` y `@DisabledOnJre` o en un rango particular de versiones del JRE mediante las anotaciones `@EnabledForJreRange` y `@DisabledForJreRange`.
+
+El rango predeterminado establece "JRE.JAVA_8" como el límite inferior (mínimo) y "JRE.OTHER" como el límite superior (máximo), lo cual permite el uso de rangos semiabiertos.
+
+```java
+@Test
+@EnabledOnJre(JAVA_8)
+void onlyOnJava8() {
+    // ...
+}
+
+@Test
+@EnabledOnJre({ JAVA_9, JAVA_10 })
+void onJava9Or10() {
+    // ...
+}
+
+@Test
+@EnabledForJreRange(min = JAVA_9, max = JAVA_11)
+void fromJava9to11() {
+    // ...
+}
+
+@Test
+@EnabledForJreRange(min = JAVA_9)
+void fromJava9toCurrentJavaFeatureNumber() {
+    // ...
+}
+
+@Test
+@EnabledForJreRange(max = JAVA_11)
+void fromJava8To11() {
+    // ...
+}
+
+@Test
+@DisabledOnJre(JAVA_9)
+void notOnJava9() {
+    // ...
+}
+
+@Test
+@DisabledForJreRange(min = JAVA_9, max = JAVA_11)
+void notFromJava9to11() {
+    // ...
+}
+
+@Test
+@DisabledForJreRange(min = JAVA_9)
+void notFromJava9toCurrentJavaFeatureNumber() {
+    // ...
+}
+
+@Test
+@DisabledForJreRange(max = JAVA_11)
+void notFromJava8to11() {
+    // ...
+}
+```
 
 #### [Native Image Conditions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-conditional-execution-native)
 
-TODO
+Un contenedor o prueba puede habilitarse o deshabilitarse dentro de una imagen nativa de GraalVM mediante las anotaciones `@EnabledInNativeImage` y `@DisabledInNativeImage`. Estas anotaciones se utilizan típicamente cuando se ejecutan pruebas dentro de una imagen nativa usando los complementos de Gradle y Maven del proyecto "GraalVM Native Build Tools".
+
+```java
+@Test
+@EnabledInNativeImage
+void onlyWithinNativeImage() {
+    // ...
+}
+
+@Test
+@DisabledInNativeImage
+void neverWithinNativeImage() {
+    // ...
+}
+```
 
 #### [System Property Conditions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-conditional-execution-system-properties)
 
-TODO
+Un contenedor o prueba puede habilitarse o deshabilitarse en función del valor de una **propiedad con nombre del sistema JVM** mediante las anotaciones `@EnabledIfSystemProperty` y `@DisabledIfSystemProperty`. El valor proporcionado a través del atributo _"matches"_ se interpretará como una expresión regular.
+
+A partir de JUnit Jupiter 5.6, estas anotaciones son **anotaciones repetibles**. En consecuencia, estas anotaciones pueden declararse múltiples veces en una interfaz de prueba, clase de prueba o método de prueba.
+
+```java
+@Test
+@EnabledIfSystemProperty(named = "os.arch", matches = ".*64.*")
+void onlyOn64BitArchitectures() {
+    // ...
+}
+
+@Test
+@DisabledIfSystemProperty(named = "ci-server", matches = "true")
+void notOnCiServer() {
+    // ...
+}
+```
 
 #### [Environment Variable Conditions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-conditional-execution-environment-variables)
 
-TODO
+Un contenedor o prueba puede habilitarse o deshabilitarse en función del valor de una **variable de entorno nombrada del sistema operativo subyacente** mediante las anotaciones `@EnabledIfEnvironmentVariable` y `@DisabledIfEnvironmentVariable`. El valor proporcionado a través del atributo _"matches"_ se interpretará como una expresión regular.
+
+A partir de JUnit Jupiter 5.6, estas anotaciones son **anotaciones repetibles**. En consecuencia, estas anotaciones pueden declararse múltiples veces en una interfaz de prueba, clase de prueba o método de prueba.
+
+```java
+@Test
+@EnabledIfEnvironmentVariable(named = "ENV", matches = "staging-server")
+void onlyOnStagingServer() {
+    // ...
+}
+
+@Test
+@DisabledIfEnvironmentVariable(named = "ENV", matches = ".*development.*")
+void notOnDeveloperWorkstation() {
+    // ...
+}
+```
 
 #### [Custom Conditions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-conditional-execution-custom)
 
-TODO
+Como alternativa a la implementación de una _"ExecutionCondition"_, un contenedor o prueba puede habilitarse o deshabilitarse en función de un método de condición configurado mediante las anotaciones `@EnabledIf` y `@DisabledIf`.
+
+Un método de condición debe tener un tipo de retorno booleano y puede aceptar sin argumentos o un solo argumento de tipo _"ExtensionContext"_.
+
+```java
+@Test
+@EnabledIf("customCondition")
+void enabled() {
+    // ...
+}
+
+@Test
+@DisabledIf("customCondition")
+void disabled() {
+    // ...
+}
+
+boolean customCondition() {
+    return true;
+}
+```
+
+Alternativamente, el método de condición puede ubicarse **fuera de la clase de prueba**. En este caso, se debe hacer referencia a él por su nombre completo:
+
+```java
+package example;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
+
+class ExternalCustomConditionDemo {
+
+    @Test
+    @EnabledIf("example.ExternalCondition#customCondition")
+    void enabled() {
+        // ...
+    }
+
+}
+
+class ExternalCondition {
+
+    static boolean customCondition() {
+        return true;
+    }
+
+}
+```
+
+Hay varios casos en los que un método de condición debería ser estático:
+
+- cuando `@EnabledIf` o `@DisabledIf` se usan a nivel de clase
+
+- cuando se usa `@EnabledIf` o `@DisabledIf` en un método `@ParameterizedTest` o `@TestTemplate`
+
+- cuando el método de condición está ubicado en una clase externa
+
+A menudo ocurre que puede utilizar un **método estático existente** en una clase de utilidad como condición personalizada.
+
+Por ejemplo, _"java.awt.GraphicsEnvironment"_ proporciona el método `public static boolean isHeadless()` que puede usarse para determinar si el entorno actual no admite una pantalla gráfica. Por lo tanto, si tienes una prueba que depende del soporte gráfico, puedes deshabilitarla cuando dicho soporte no esté disponible de la siguiente manera:
+
+```java
+@DisabledIf(value = "java.awt.GraphicsEnvironment#isHeadless",
+    disabledReason = "headless environment")
+```
 
 ### [Tagging and Filtering](https://junit.org/junit5/docs/current/user-guide/#writing-tests-tagging-and-filtering)
 
@@ -544,11 +762,158 @@ La sintaxis de las etiquetas debe seguir ciertas [reglas](https://junit.org/juni
 
 ### [Test Execution Order](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order)
 
-TODO
+Por defecto, las clases y métodos de prueba se ordenarán utilizando un algoritmo que es determinista pero intencionalmente no obvio. Esto asegura que ejecuciones subsecuentes de un conjunto de pruebas ejecuten las clases y métodos de prueba en el mismo orden, permitiendo así construcciones repetibles.
+
+Aunque las verdaderas pruebas unitarias normalmente no deberían depender del orden en el que se ejecutan, hay ocasiones en las que es necesario imponer un orden de ejecución de un método de prueba específico, como por ejemplo en pruebas de integración o pruebas funcionales.
+
+#### [Method Order](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order-methods)
+
+Para controlar el orden en el que se ejecutan los métodos de prueba, anota tu clase de prueba o interfaz de prueba con `@TestMethodOrder` y especifica la implementación de ["MethodOrderer"](https://junit.org/junit5/docs/current/api/org.junit.jupiter.api/org/junit/jupiter/api/MethodOrderer.html) deseada.
+
+Se puede implementar un _"MethodOrderer"_ personalizado o usar una de las implementaciones integradas.
+
+El siguiente ejemplo demuestra cómo garantizar que los métodos de prueba se ejecuten en el orden especificado mediante la anotación `@Order`:
+
+```java
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+@TestMethodOrder(OrderAnnotation.class)
+class OrderedTestsDemo {
+
+    @Test
+    @Order(1)
+    void nullValues() {
+        // perform assertions against null values
+    }
+
+    @Test
+    @Order(2)
+    void emptyValues() {
+        // perform assertions against empty values
+    }
+
+    @Test
+    @Order(3)
+    void validValues() {
+        // perform assertions against valid values
+    }
+
+}
+```
+
+#### [Class Order](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order-classes)
+
+Aunque las clases de prueba típicamente no deben depender del orden en que se ejecutan, hay ocasiones en las que es deseable aplicar un orden específico de ejecución a las clases de prueba. Puedes desear ejecutar las clases de prueba en un orden aleatorio para asegurarte de que no existan dependencias accidentales entre ellas, por ejemplo.
+
+Se puede implementar un ["ClassOrderer"](https://junit.org/junit5/docs/current/api/org.junit.jupiter.api/org/junit/jupiter/api/ClassOrderer.html) personalizado o utilizar una de las implementaciones integradas.
+
+El siguiente ejemplo demuestra cómo garantizar que las clases de prueba `@Nested` se ejecuten en el orden especificado mediante la anotación `@Order`.
+
+```java
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
+
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
+class OrderedNestedTestClassesDemo {
+
+    @Nested
+    @Order(1)
+    class PrimaryTests {
+
+        @Test
+        void test1() {
+        }
+    }
+
+    @Nested
+    @Order(2)
+    class SecondaryTests {
+
+        @Test
+        void test2() {
+        }
+    }
+}
+```
 
 ### [Test Instance Lifecycle](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-instance-lifecycle)
 
-TODO
+Para permitir que los métodos de prueba individuales se ejecuten de **manera aislada** y evitar **efectos secundarios inesperados** debido al estado mutable de la instancia de prueba, JUnit **crea una nueva instancia** de cada clase de prueba antes de ejecutar cada método de prueba.
+
+Este ciclo de vida de instancia de prueba "por método" es el **comportamiento predeterminado** en JUnit Jupiter y es análogo a todas las versiones anteriores de JUnit.
+
+Si se requiere que JUnit Jupiter ejecute todos los métodos de prueba en **la misma instancia de prueba**, se debe anotar la clase de prueba con `@TestInstance(Lifecycle.PER_CLASS)`:
+
+```java
+import org.junit.jupiter.api.*;
+
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public class MyClassTest {
+
+    private int counter = 0;
+
+    @BeforeAll
+    void init() {
+        // Este método se ejecuta una vez antes de todos los métodos de prueba
+        System.out.println("Inicialización de la clase de prueba...");
+    }
+
+    @BeforeEach
+    void setUp() {
+        // Este método se ejecuta antes de cada método de prueba
+        counter++;
+        System.out.println("Preparando para ejecutar el método de prueba " + counter);
+    }
+
+    @Test
+    void testMethod1() {
+        // Método de prueba 1
+        System.out.println("Ejecutando método de prueba 1...");
+        Assertions.assertEquals(1, counter);
+    }
+
+    @Test
+    void testMethod2() {
+        // Método de prueba 2
+        System.out.println("Ejecutando método de prueba 2...");
+        Assertions.assertEquals(2, counter);
+    }
+
+    @AfterEach
+    void tearDown() {
+        // Este método se ejecuta después de cada método de prueba
+        System.out.println("Finalizando la ejecución del método de prueba " + counter);
+    }
+
+    @AfterAll
+    void cleanUp() {
+        // Este método se ejecuta una vez después de todos los métodos de prueba
+        System.out.println("Limpieza después de todos los métodos de prueba");
+    }
+}
+```
+
+Al usar este modo, se creará una nueva instancia de prueba una vez por clase de prueba. Por lo tanto, si los métodos de prueba dependen del estado almacenado en variables de instancia, es posible que se necesite restablecer ese estado en los métodos `@BeforeEach` o `@AfterEach`.
+
+El modo "por clase" tiene algunos beneficios adicionales sobre el modo predeterminado "por método". Específicamente, con el modo "por clase", es posible declarar los métodos `@BeforeAll` y `@AfterAll` en métodos no estáticos, así como en métodos por defecto de interfaces. Por lo tanto, el modo "por clase" también hace posible utilizar métodos `@BeforeAll` y `@AfterAll` en clases de prueba `@Nested`.
+
+#### [Changing the Default Test Instance Lifecycle](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-instance-lifecycle-changing-default)
+
+Si una clase de prueba o una interfaz de prueba no está anotada con `@TestInstance`, JUnit Jupiter utilizará un modo de ciclo de vida predeterminado. El modo predeterminado estándar es **_"PER_METHOD"_**; sin embargo, es posible cambiar el valor predeterminado para la ejecución de un plan de prueba completo.
+
+Para establecer el modo de ciclo de vida de la instancia de prueba predeterminado en **_"Lifecycle.PER_CLASS"_** a través del archivo de configuración de la plataforma JUnit, cree un archivo llamado **"junit-platform.properties"** en la raíz de la ruta de clase (por ejemplo, _"src/test/resources"_) con el siguiente contenido:
+
+```txt
+junit.jupiter.testinstance.lifecycle.default = per_class
+```
+
+Existen otras formas de para configurar el modo, pero esta es la recomendable ya que este archivo de configuración puede ser incluido en un sistema de control de versiones junto con el proyecto, lo que permite su uso dentro de los entornos de desarrollo integrado (IDE) y en el software de construcción.
 
 ### [Nested Tests](https://junit.org/junit5/docs/current/user-guide/#writing-tests-nested)
 
