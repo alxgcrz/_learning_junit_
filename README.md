@@ -917,13 +917,254 @@ Existen otras formas de para configurar el modo, pero esta es la recomendable ya
 
 ### [Nested Tests](https://junit.org/junit5/docs/current/user-guide/#writing-tests-nested)
 
-TODO
+Los tests anidados (`@Nested`) brindan al desarrollador más capacidades para expresar la relación entre varios grupos de pruebas. Dichos tests anidados hacen uso de las clases anidadas de Java y facilitan el pensamiento jerárquico sobre la estructura de las pruebas.
+
+```java
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.EmptyStackException;
+import java.util.Stack;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+@DisplayName("A stack")
+class TestingAStackDemo {
+
+    Stack<Object> stack;
+
+    @Test
+    @DisplayName("is instantiated with new Stack()")
+    void isInstantiatedWithNew() {
+        new Stack<>();
+    }
+
+    @Nested
+    @DisplayName("when new")
+    class WhenNew {
+
+        @BeforeEach
+        void createNewStack() {
+            stack = new Stack<>();
+        }
+
+        @Test
+        @DisplayName("is empty")
+        void isEmpty() {
+            assertTrue(stack.isEmpty());
+        }
+
+        @Test
+        @DisplayName("throws EmptyStackException when popped")
+        void throwsExceptionWhenPopped() {
+            assertThrows(EmptyStackException.class, stack::pop);
+        }
+
+        @Test
+        @DisplayName("throws EmptyStackException when peeked")
+        void throwsExceptionWhenPeeked() {
+            assertThrows(EmptyStackException.class, stack::peek);
+        }
+
+        @Nested
+        @DisplayName("after pushing an element")
+        class AfterPushing {
+
+            String anElement = "an element";
+
+            @BeforeEach
+            void pushAnElement() {
+                stack.push(anElement);
+            }
+
+            @Test
+            @DisplayName("it is no longer empty")
+            void isNotEmpty() {
+                assertFalse(stack.isEmpty());
+            }
+
+            @Test
+            @DisplayName("returns the element when popped and is empty")
+            void returnElementWhenPopped() {
+                assertEquals(anElement, stack.pop());
+                assertTrue(stack.isEmpty());
+            }
+
+            @Test
+            @DisplayName("returns the element when peeked but remains not empty")
+            void returnElementWhenPeeked() {
+                assertEquals(anElement, stack.peek());
+                assertFalse(stack.isEmpty());
+            }
+        }
+    }
+}
+```
+
+En este ejemplo, las condiciones previas de las pruebas externas se utilizan en las pruebas internas mediante la definición de métodos de ciclo de vida jerárquicos para el código de configuración. Por ejemplo, `createNewStack()` es un método de ciclo de vida `@BeforeEach` que se utiliza en la clase de prueba en la que está definido y en todos los niveles del árbol de anidación por debajo de la clase en la que está definido.
 
 ### [Dependency Injection for Constructors and Methods](https://junit.org/junit5/docs/current/user-guide/#writing-tests-dependency-injection)
 
-TODO
+En todas las versiones anteriores de JUnit, no se permitía que los constructores o métodos de prueba tuvieran parámetros (al menos no con las implementaciones estándar de Runner). Como uno de los principales cambios en JUnit Jupiter, ahora se permite que tanto los constructores de prueba como los métodos tengan **parámetros**. Esto permite una mayor flexibilidad y habilita la inyección de dependencias (DI) para constructores y métodos.
+
+[ParameterResolver](https://junit.org/junit5/docs/current/api/org.junit.jupiter.api/org/junit/jupiter/api/extension/ParameterResolver.html) define la API para extensiones de prueba que desean resolver dinámicamente los parámetros en tiempo de ejecución. Si un constructor de clase de prueba, un método de prueba o un método de ciclo de vida acepta un parámetro, el parámetro debe ser resuelto en tiempo de ejecución por un _"ParameterResolver"_ registrado.
+
+Actualmente, hay tres resolutores integrados que se registran automáticamente:
+
+- [TestInfoParameterResolver](https://github.com/junit-team/junit5/tree/r5.10.3/junit-jupiter-engine/src/main/java/org/junit/jupiter/engine/extension/TestInfoParameterResolver.java)
+
+Si un parámetro de constructor o método es de tipo `TestInfo`, el `TestInfoParameterResolver` proporcionará una instancia de `TestInfo` correspondiente al contenedor o prueba actual como valor para el parámetro. Se puede utilizar para obtener información sobre el contenedor o la prueba actual, como el nombre visible, la clase de prueba, el método de prueba y las etiquetas asociadas. El nombre visible puede ser un nombre técnico, como el nombre de la clase de prueba o del método de prueba, o un nombre personalizado configurado mediante `@DisplayName`.
+
+```java
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+
+@DisplayName("TestInfo Demo")
+class TestInfoDemo {
+
+    TestInfoDemo(TestInfo testInfo) {
+        assertEquals("TestInfo Demo", testInfo.getDisplayName());
+    }
+
+    @BeforeEach
+    void init(TestInfo testInfo) {
+        String displayName = testInfo.getDisplayName();
+        assertTrue(displayName.equals("TEST 1") || displayName.equals("test2()"));
+    }
+
+    @Test
+    @DisplayName("TEST 1")
+    @Tag("my-tag")
+    void test1(TestInfo testInfo) {
+        assertEquals("TEST 1", testInfo.getDisplayName());
+        assertTrue(testInfo.getTags().contains("my-tag"));
+    }
+
+    @Test
+    void test2() {
+    }
+
+}
+```
+
+- [RepetitionExtension](https://github.com/junit-team/junit5/tree/r5.10.3/junit-jupiter-engine/src/main/java/org/junit/jupiter/engine/extension/RepetitionExtension.java)
+
+Si un parámetro de método en un método `@RepeatedTest`, `@BeforeEach` o `@AfterEach` es de tipo `RepetitionInfo`, la extensión `RepetitionExtension` proporcionará una instancia de `RepetitionInfo`. Se puede utilizar para obtener información sobre la repetición actual, el número total de repeticiones, el número de repeticiones que han fallado y el umbral de fallos para el `@RepeatedTest` correspondiente. Sin embargo, es importante tener en cuenta que `RepetitionExtension` no se registra fuera del contexto de un `@RepeatedTest`.
+
+- [TestReporterParameterResolver](https://github.com/junit-team/junit5/tree/r5.10.3/junit-jupiter-engine/src/main/java/org/junit/jupiter/engine/extension/TestReporterParameterResolver.java)
+
+Si un parámetro de constructor o método es de tipo `TestReporter`, el `TestReporterParameterResolver` proporcionará una instancia de `TestReporter`. Se puede utilizar para publicar datos adicionales sobre la ejecución actual de la prueba. Estos datos pueden ser consumidos a través del método `reportingEntryPublished()` en un TestExecutionListener, lo que permite verlos en entornos de desarrollo integrado (IDEs) o incluirlos en informes.
+
+```java
+
+
+class TestReporterDemo {
+
+    @Test
+    void reportSingleValue(TestReporter testReporter) {
+        testReporter.publishEntry("a status message");
+    }
+
+    @Test
+    void reportKeyValuePair(TestReporter testReporter) {
+        testReporter.publishEntry("a key", "a value");
+    }
+
+    @Test
+    void reportMultipleKeyValuePairs(TestReporter testReporter) {
+        Map<String, String> values = new HashMap<>();
+        values.put("user name", "dk38");
+        values.put("award year", "1974");
+
+        testReporter.publishEntry(values);
+    }
+
+}
+```
 
 ### [Test Interfaces and Default Methods](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-interfaces-and-default-methods)
+
+JUnit Jupiter permite que las siguientes anotaciones se declaren en métodos por defecto de interfaces:
+
+- @Test
+- @RepeatedTest
+- @ParameterizedTest
+- @TestFactory
+- @TestTemplate
+- @BeforeEach
+- @AfterEach
+
+Además, las anotaciones `@BeforeAll` y `@AfterAll` pueden ser declaradas en métodos estáticos de una interfaz de prueba o en métodos por defecto de una interfaz si la interfaz de prueba o la clase de prueba están anotadas con `@TestInstance(Lifecycle.PER_CLASS)`.
+
+```java
+@TestInstance(Lifecycle.PER_CLASS)
+interface TestLifecycleLogger {
+
+    static final Logger logger = Logger.getLogger(TestLifecycleLogger.class.getName());
+
+    @BeforeAll
+    default void beforeAllTests() {
+        logger.info("Before all tests");
+    }
+
+    @AfterAll
+    default void afterAllTests() {
+        logger.info("After all tests");
+    }
+
+    @BeforeEach
+    default void beforeEachTest(TestInfo testInfo) {
+        logger.info(() -> String.format("About to execute [%s]",
+            testInfo.getDisplayName()));
+    }
+
+    @AfterEach
+    default void afterEachTest(TestInfo testInfo) {
+        logger.info(() -> String.format("Finished executing [%s]",
+            testInfo.getDisplayName()));
+    }
+
+}
+```
+
+En su clase de prueba, puede implementar estas interfaces de prueba para aplicarlas:
+
+```java
+class TestInterfaceDemo implements TestLifecycleLogger,
+        TimeExecutionLogger, TestInterfaceDynamicTestsDemo {
+
+    @Test
+    void isEqualValue() {
+        assertEquals(1, "a".length(), "is always equal");
+    }
+
+}
+```
+
+Su finalidad es definir métodos de prueba genéricos en la interfaz que luego pueden ser implementados por múltiples clases de prueba. Esto promueve la reutilización del código de prueba común entre diferentes implementaciones de pruebas.
+
+Además, con las anotaciones como `@BeforeEach`, `@AfterEach`, `@BeforeAll` y `@AfterAll` en métodos de interfaz, puedes definir configuraciones de inicialización y limpieza que se aplican a todas las implementaciones de pruebas que implementen esa interfaz.
+
+### [Repeated Test](https://junit.org/junit5/docs/current/user-guide/#writing-tests-repeated-tests)
+
+TODO
+
+### [Parameterized Test](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests)
+
+TODO
+
+### [Test Templates](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-templates)
 
 TODO
 
@@ -931,7 +1172,7 @@ TODO
 
 ## Referencias
 
-- <https://junit.org/junit5/>
+- <https://junit.org/junit5>
 - <https://github.com/junit-team/junit5-samples>
 - <https://www.baeldung.com/junit>
 - <https://www.tutorialspoint.com/junit/index.htm>
