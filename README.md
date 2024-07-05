@@ -1158,7 +1158,98 @@ Además, con las anotaciones como `@BeforeEach`, `@AfterEach`, `@BeforeAll` y `@
 
 ### [Repeated Test](https://junit.org/junit5/docs/current/user-guide/#writing-tests-repeated-tests)
 
-TODO
+JUnit Jupiter proporciona la capacidad de **repetir una prueba un número especificado de veces** anotando un método con `@RepeatedTest` y especificando el número total de repeticiones deseadas. Cada invocación de una prueba repetida se comporta como la ejecución de un método `@Test` regular, con soporte completo para las mismas devoluciones de llamada de ciclo de vida y extensiones.
+
+```java
+// Se repite 10 veces
+@RepeatedTest(10)
+void repeatedTest() {
+    // ...
+}
+```
+
+Desde JUnit Jupiter 5.10, `@RepeatedTest` se puede configurar con un **umbral de fallos** que indica el número de fallos después del cual las repeticiones restantes se omitirán automáticamente. Establezca el atributo `failureThreshold` en un número positivo menor que el número total de repeticiones para omitir las invocaciones de las repeticiones restantes después de haber encontrado el número especificado de fallos.
+
+Si por ejemplo se establece en `failureThreshold = 1` la repetición de test se detendrá cuando se produzca 1 test fallido. Por defecto, el atributo `failureThreshold` se establece en `Integer.MAX_VALUE`, lo que significa que no se aplicará ningún umbral de fallos.
+
+De hecho, para evitar efectos inesperados, se recomienda establecer `@Execution(SAME_THREAD)` para que los tests repetidos se ejecuten en el mismo hilo si se ha configurado la ejecución en paralelo.
+
+Además de especificar el número de repeticiones y el umbral de fallos, se puede configurar un nombre personalizado para cada repetición a través del atributo _"name"_ de la anotación `@RepeatedTest`. Además, el nombre mostrado puede ser un patrón compuesto por una combinación de texto estático y marcadores de posición dinámicos. Actualmente, se admiten los siguientes marcadores de posición:
+
+- `{displayName}`: nombre mostrado del método `@RepeatedTest`
+
+- `{currentRepetition}`: el conteo de la repetición actual
+
+- `{totalRepetitions}`: el número total de repeticiones
+
+El nombre mostrado predeterminado para una repetición dada se genera basado en el siguiente patrón:
+
+- "repetition {currentRepetition} of {totalRepetitions}"
+
+Para recuperar información sobre la repetición actual, el número total de repeticiones, el número de repeticiones que han fallado y el umbral de fallos, un desarrollador puede optar por tener una instancia de `RepetitionInfo` inyectada en un método `@RepeatedTest`, `@BeforeEach` o `@AfterEach`.
+
+```java
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import java.util.logging.Logger;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.RepetitionInfo;
+import org.junit.jupiter.api.TestInfo;
+
+class RepeatedTestsDemo {
+
+    private Logger logger = // ...
+
+    @BeforeEach
+    void beforeEach(TestInfo testInfo, RepetitionInfo repetitionInfo) {
+        int currentRepetition = repetitionInfo.getCurrentRepetition();
+        int totalRepetitions = repetitionInfo.getTotalRepetitions();
+        String methodName = testInfo.getTestMethod().get().getName();
+        logger.info(String.format("About to execute repetition %d of %d for %s", //
+            currentRepetition, totalRepetitions, methodName));
+    }
+
+    @RepeatedTest(10)
+    void repeatedTest() {
+        // ...
+    }
+
+    @RepeatedTest(5)
+    void repeatedTestWithRepetitionInfo(RepetitionInfo repetitionInfo) {
+        assertEquals(5, repetitionInfo.getTotalRepetitions());
+    }
+
+    @RepeatedTest(value = 8, failureThreshold = 2)
+    void repeatedTestWithFailureThreshold(RepetitionInfo repetitionInfo) {
+        // Simulate unexpected failure every second repetition
+        if (repetitionInfo.getCurrentRepetition() % 2 == 0) {
+            fail("Boom!");
+        }
+    }
+
+    @RepeatedTest(value = 1, name = "{displayName} {currentRepetition}/{totalRepetitions}")
+    @DisplayName("Repeat!")
+    void customDisplayName(TestInfo testInfo) {
+        assertEquals("Repeat! 1/1", testInfo.getDisplayName());
+    }
+
+    @RepeatedTest(value = 1, name = RepeatedTest.LONG_DISPLAY_NAME)
+    @DisplayName("Details...")
+    void customDisplayNameWithLongPattern(TestInfo testInfo) {
+        assertEquals("Details... :: repetition 1 of 1", testInfo.getDisplayName());
+    }
+
+    @RepeatedTest(value = 5, name = "Wiederholung {currentRepetition} von {totalRepetitions}")
+    void repeatedTestInGerman() {
+        // ...
+    }
+
+}
+```
 
 ### [Parameterized Test](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests)
 
