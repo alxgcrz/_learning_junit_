@@ -1257,6 +1257,127 @@ class RepeatedTestsDemo {
 
 ### [Parameterized Test](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests)
 
+Las pruebas parametrizadas permiten ejecutar una prueba **varias veces con diferentes argumentos**. Se declaran como los métodos `@Test` normales, pero en su lugar utilizan la anotación [`@ParameterizedTest`](https://junit.org/junit5/docs/current/api/org.junit.jupiter.params/org/junit/jupiter/params/ParameterizedTest.html).
+
+Además, se debe declarar al menos una fuente que proporcionará los argumentos para cada invocación y luego se consumirán los argumentos en el método de prueba.
+
+Ejemplo de test parametrizado con la anotación `@ValueSouce` que provee un array de strings como fuente:
+
+```java
+@ParameterizedTest
+@ValueSource(strings = { "racecar", "radar", "able was I ere I saw elba" })
+void palindromes(String candidate) {
+    assertTrue(StringUtils.isPalindrome(candidate));
+}
+```
+
+#### [Required Setup](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests-setup)
+
+Para utilizar las pruebas parametrizadas, se debe agregar la dependencia en el artefacto **_"junit-jupiter-params"_**.
+
+En Maven:
+
+```xml
+<dependency>
+    <groupId>org.junit.jupiter</groupId>
+    <artifactId>junit-jupiter-params</artifactId>
+    <version>5.9.3</version> <!-- Usar la versión más actual -->
+    <scope>test</scope>
+</dependency>
+```
+
+En Gradle:
+
+```txt
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.9.3' // Usar la versión más actual
+}
+```
+
+#### [Consuming Arguments](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests-consuming-arguments)
+
+Este fragmento de la documentación de JUnit explica cómo deben declararse los métodos de prueba parametrizados y cómo se manejan los diferentes tipos de argumentos que pueden ser proporcionados a estos métodos.
+
+1. **Indexed Arguments (Argumentos Indexados)**:
+   - Los métodos de prueba parametrizados normalmente consumen argumentos directamente desde una fuente configurada, como `@CsvSource`.
+   - Hay una correspondencia directa uno a uno entre el índice de la fuente de argumentos y el índice del parámetro del método.
+   - Por ejemplo, si estás utilizando `@CsvSource`, cada valor separado por comas en la fila de datos CSV se asignará directamente a un parámetro en el método de prueba.
+
+2. **Argument Aggregation (Agregación de Argumentos)**:
+   - Además de consumir argumentos uno a uno, un método de prueba parametrizado puede optar por agrupar varios argumentos de la fuente en un solo objeto que se pasa al método.
+   - Esto es útil cuando los datos en la fuente están estructurados y se desean manejar como una única entidad en el método de prueba.
+
+3. **ParameterResolver (Resolutores de Parámetros)**:
+   - Los métodos de prueba parametrizados pueden también recibir argumentos adicionales proporcionados por un ParameterResolver.
+   - Por ejemplo, esto podría incluir objetos como `TestInfo`, `TestReporter`, etc., que son proporcionados por JUnit para obtener información sobre la prueba en curso o para reportar resultados.
+
+En cuanto a la declaración de parámetros en un método de prueba parametrizado:
+
+- Deben declararse primero los argumentos indexados (si los hay), seguidos de los agregadores (si los hay), y finalmente los argumentos proporcionados por un `ParameterResolver`.
+
+- **Argumento indexado**: Es aquel que corresponde directamente al índice de un ArgumentsProvider y se asigna al parámetro del método en el mismo índice.
+
+- **Aggregator (Agregador)**: Es un parámetro que maneja múltiples valores de la fuente de argumentos, ya sea utilizando `ArgumentsAccessor` o anotándolo con `@AggregateWith`.
+
+JUnit proporciona flexibilidad en cómo se pueden manejar los argumentos en los métodos de prueba parametrizados, permitiendo diferentes estrategias según las necesidades específicas de la prueba.
+
+#### [Source of Arguments](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests-sources)
+
+JUnit Jupiter proporciona una serie de anotaciones de fuente de argumentos. Estas anotaciones se encuentran en el paquete [_org.junit.jupiter.params.provider_](https://junit.org/junit5/docs/current/api/org.junit.jupiter.params/org/junit/jupiter/params/provider/package-summary.html).
+
+##### @ValueSource
+
+[`@ValueSource`](https://junit.org/junit5/docs/current/api/org.junit.jupiter.params/org/junit/jupiter/params/provider/ValueSource.html) es una de las fuentes más simples posibles. Permite especificar una única matriz de valores literales y solo se puede utilizar para proporcionar un único argumento por invocación de prueba parametrizada.
+
+Los tipos soportados por esta anotación son:
+
+- **short**
+- **byte**
+- **int**
+- **long**
+- **float**
+- **double**
+- **char**
+- **boolean**
+- **java.lang.String**
+- **java.lang.Class**
+
+En el ejemplo la prueba se ejecuta **tres veces**, una por cada valor suministrado:
+
+```java
+@ParameterizedTest
+@ValueSource(ints = { 1, 2, 3 })
+void testWithValueSource(int argument) {
+    assertTrue(argument > 0 && argument < 4);
+}
+```
+
+##### Null and Empty Sources
+
+Para comprobar los casos extremos y verificar el comportamiento adecuado cuando se recibe una entrada incorrecta, puede resultar útil proporcionar valores nulos y vacíos a las pruebas parametrizadas:
+
+- [**@NullSource**](https://junit.org/junit5/docs/current/api/org.junit.jupiter.params/org/junit/jupiter/params/provider/NullSource.html): proporciona un único argumento nulo en el método anotado.
+
+- [**@EmptySource**](https://junit.org/junit5/docs/current/api/org.junit.jupiter.params/org/junit/jupiter/params/provider/EmptySource.html): proporciona un único argumento vacío.
+
+- [**@NullAndEmptySource**](https://junit.org/junit5/docs/current/api/org.junit.jupiter.params/org/junit/jupiter/params/provider/NullAndEmptySource.html): es una meta-anotación de las otras dos anotaciones.
+
+Si se necesita proporcionar varios tipos diferentes de **cadenas en blanco** a una prueba parametrizada, se puede lograr con algo parecido al ejemplo `@ValueSource(strings = {" ", "   ", "\t", "\n"})`.
+
+También se puede combinar `@NullSource`, `@EmptySource` y `@ValueSource` para probar una gama más amplia de entradas nulas, vacías y en blanco. El siguiente ejemplo demuestra cómo lograr esto para cadenas:
+
+```java
+@ParameterizedTest
+@NullSource
+@EmptySource
+@ValueSource(strings = { " ", "   ", "\t", "\n" })
+void nullEmptyAndBlankStrings(String text) {
+    assertTrue(text == null || text.trim().isEmpty());
+}
+```
+
+##### @EnumSource
+
 TODO
 
 ### [Test Templates](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-templates)
