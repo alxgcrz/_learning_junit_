@@ -1378,6 +1378,74 @@ void nullEmptyAndBlankStrings(String text) {
 
 ##### @EnumSource
 
+Esta anotación `@EnumSource` proporciona una manera conveniente de utilizar enumeraciones. La prueba se ejecutará por **cada una de las constantes de la enumeración**:
+
+```java
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+enum Day implements IDayOfWeek {
+    MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY
+}
+
+public class EnumSourceTest {
+
+    @ParameterizedTest
+    @EnumSource
+    void testWithEnumSource(Day day) {
+        assertNotNull(day);
+    }
+
+}
+```
+
+El atributo `value` de la anotación `@EnumSource` es opcional. En el siguiente ejemplo se utiliza este atributo en la anotación para indicar la clase de la enumeración, ya que en el parámetro del método de prueba se utiliza la interfaz implementada por el enumerado:
+
+```java
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+enum Day implements IDayOfWeek {
+    MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY
+}
+
+public class EnumSourceTest {
+
+    @ParameterizedTest
+    @EnumSource(Day.class)
+    void testWithEnumSource(IDayOfWeek day) {
+        assertNotNull(day);
+    }
+
+}
+```
+
+La anotación proporciona un atributo `names` opcional que le permite especificar qué constantes se utilizarán. Si se omite, se utilizarán todas las constantes.
+
+```java
+// Sólo se ejecuta para "MONDAY", "TUESDAY"
+@ParameterizedTest
+@EnumSource(names = { "MONDAY", "TUESDAY" })
+void testWithEnumSource(Day day) {
+    assertNotNull(day);
+}
+```
+
+La anotación `@EnumSource` también proporciona un atributo `mode` opcional que permite un control detallado sobre qué constantes se pasan al método de prueba, como por ejemplo, excluir algunas constantes:
+
+```java
+// Sólo se ejecuta para "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"
+@ParameterizedTest
+@EnumSource(mode = EnumSource.Mode.EXCLUDE, names = {"SATURDAY", "SUNDAY"})
+void testWorkingDays(Day day) {
+    assertNotNull(day);
+}
+```
+
+##### @MethodSource
+
 TODO
 
 ### [Test Templates](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-templates)
