@@ -1378,7 +1378,7 @@ void nullEmptyAndBlankStrings(String text) {
 
 ##### @EnumSource
 
-Esta anotación `@EnumSource` proporciona una manera conveniente de utilizar enumeraciones. La prueba se ejecutará por **cada una de las constantes de la enumeración**:
+Esta anotación [`@EnumSource`](https://junit.org/junit5/docs/current/api/org.junit.jupiter.params/org/junit/jupiter/params/provider/EnumSource.html) proporciona una manera conveniente de utilizar enumeraciones. La prueba se ejecutará por **cada una de las constantes de la enumeración**:
 
 ```java
 import org.junit.jupiter.params.ParameterizedTest;
@@ -1445,6 +1445,113 @@ void testWorkingDays(Day day) {
 ```
 
 ##### @MethodSource
+
+La anotación [`@MethodSource`](https://junit.org/junit5/docs/current/api/org.junit.jupiter.params/org/junit/jupiter/params/provider/MethodSource.html) le permite hacer referencia a uno o más métodos de fábrica de la clase de prueba o clases externas.
+
+Los métodos de fábrica dentro de la clase de prueba deben ser **estáticos** a menos que la clase de prueba esté anotada con `@TestInstance(Lifecycle.PER_CLASS);` mientras que los métodos de fábrica en **clases externas siempre deben ser estáticos**.
+
+Cada método de fábrica debe generar una secuencia o _"Stream"_ de argumentos, y cada conjunto de argumentos dentro de la secuencia se proporcionará como argumentos físicos para invocaciones individuales del método `@ParameterizedTest` anotado.
+
+En términos generales, esto se traduce en un _"Stream"_ de _"Arguments"_ (es decir, `Stream<Arguments>`); sin embargo, el tipo de devolución concreto real puede adoptar muchas formas. En este contexto, una "secuencia" es cualquier cosa que JUnit pueda convertir de manera confiable en una secuencia, como `Stream`, `DoubleStream`, `LongStream`, `IntStream`, `Collection`, `Iterator`, `Iterable`, una matriz de objetos o una matriz de primitivas.
+
+Por ejemplo, tres métodos que suministren argumentos a un método de prueba podrían ser:
+
+```java
+static String[] workingDaysProvider() {
+    return new String[]{"MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"};
+}
+
+static Stream<String> workingDaysProvider2() {
+    return Stream.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY");
+}
+
+static Stream<Integer> workingDaysProvider3() {
+    return Stream.of(1, 2, 3, 4, 5);
+}
+
+static IntStream workingDaysProvider4() {
+    return IntStream.of(1, 2, 3, 4, 5);
+}
+```
+
+El método de prueba que podría hacer uso del método `workingDaysProvider()`:
+
+```java
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+public class MethodSourceTest {
+
+    @ParameterizedTest
+    @MethodSource("workingDaysProvider")
+    void testWithExplicitLocalMethodSource(String argument) {
+        assertNotNull(argument);
+    }
+
+    static Stream<String> workingDaysProvider() {
+        return Stream.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY");
+    }
+
+}
+```
+
+Si no se proporciona explícitamente un nombre de método de fábrica a través de `@MethodSource`, JUnit Jupiter buscará un método de fábrica que tenga el mismo nombre que el método `@ParameterizedTest` actual por convención.
+
+```java
+@ParameterizedTest
+@MethodSource
+void testWithDefaultLocalMethodSource(String argument) {
+    assertNotNull(argument);
+}
+
+static Stream<String> testWithDefaultLocalMethodSource() {
+    return Stream.of("apple", "banana");
+}
+```
+
+##### @CsvSource
+
+La anotación [`@CsvSource`](https://junit.org/junit5/docs/current/api/org.junit.jupiter.params/org/junit/jupiter/params/provider/CsvSource.html) le permite expresar listas de argumentos como valores separados por comas (es decir, literales de cadena CSV). Cada cadena proporcionada mediante el atributo de valor en `@CsvSource` representa un registro CSV y da como resultado una invocación de la prueba parametrizada. Opcionalmente, el primer registro se puede utilizar para proporcionar encabezados CSV.
+
+```java
+@ParameterizedTest
+@CsvSource({
+    "apple,         1", // "apple", "1"
+    "banana,        2", // "banana", "2"
+    "'lemon, lime', 3", // "lemon, lime", "3"
+    "strawberry,   ''", // "strawberry", ""
+    "banana, "         // "banana", null
+})
+void testWithCsvSource(String fruit, int rank) {
+    assertNotNull(fruit);
+    assertNotEquals(0, rank);
+}
+```
+
+El delimitador predeterminado es una coma (,), pero puede usar otro carácter configurando el atributo `delimiter`. Alternativamente, el atributo `delimiterString` le permite utilizar un delimitador de cadena en lugar de un solo carácter. Sin embargo, ambos atributos delimitadores no se pueden establecer simultáneamente.
+
+De forma predeterminada, `@CsvSource` utiliza una comilla simple (') como carácter de comilla, pero esto se puede cambiar mediante el atributo `quoteCharacter`.
+
+Un valor entrecomillado vacío ('') da como resultado una cadena vacía a menos que se establezca el atributo `emptyValue`; mientras que un valor completamente vacío se interpreta como una referencia nula, como por ejemplo `"banana, "`, que falta el segundo argumento.
+
+##### @CsvFileSource
+
+La anotación [`@CsvFileSource`](https://junit.org/junit5/docs/current/api/org.junit.jupiter.params/org/junit/jupiter/params/provider/CsvFileSource.html) le permite utilizar archivos de valores separados por comas (CSV) del classpath o del sistema de archivos local. Cada registro de un archivo CSV da como resultado una invocación de la prueba parametrizada. Opcionalmente, el primer registro se puede utilizar para proporcionar encabezados CSV.
+
+Se pueden añadir **comentarios** en un fichero CSV. Cualquier línea que comience con el símbolo `#` se interpretará como un comentario y se ignorará.
+
+```txt
+# Fichero CSV
+COUNTRY, REFERENCE
+Sweden, 1
+Poland, 2
+"United States of America", 3
+France, 700_000
+```
+
+##### @ArgumentsSource
 
 TODO
 
