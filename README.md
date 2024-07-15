@@ -1551,9 +1551,234 @@ Poland, 2
 France, 700_000
 ```
 
+A diferencia de la sintaxis predeterminada utilizada en `@CsvSource`, `@CsvFileSource` utiliza una comilla doble (") como carácter de comilla de forma predeterminada, pero esto se puede cambiar mediante el atributo `quoteCharacter`.
+
 ##### @ArgumentsSource
 
-TODO
+La anotación `@ArgumentsSource` se puede utilizar para especificar un `ArgumentsProvider` personalizado y reutilizable.
+
+Hay que tener en cuenta que debe crearse una clase de nivel superior (o clase anidada estática) que implemente la interfaz `ArgumentsProvider`. Esta interfaz tiene un método llamado `provideArguments(ExtensionContext context)` que devuelve un `Stream` de `Arguments`:
+
+```java
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
+
+import java.util.stream.Stream;
+
+public class MyArgumentsProvider implements ArgumentsProvider {
+    @Override
+    public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
+        return Stream.of(
+            Arguments.of("arg1", 1),
+            Arguments.of("arg2", 2),
+            Arguments.of("arg3", 3)
+        );
+    }
+}
+```
+
+La clase de prueba que utiliza la anotación `@ArgumentsSource`:
+
+```java
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class MyParameterizedTest {
+    @ParameterizedTest
+    @ArgumentsSource(MyArgumentsProvider.class)
+    void testWithArgumentsSource(String argument, int number) {
+        // Realiza tus aserciones aquí
+        System.out.println(argument + " - " + number);
+        assertEquals(1, number);  // Ejemplo de aserción
+    }
+}
+```
+
+Esta anotación ofrece **flexibilidad** ya que se pueden crear conjuntos de argumentos complejos o dinámicos, como leer datos de un archivo, una base de datos o generar datos en tiempo de ejecución.
+
+Además, promueve la **reutilización** y favorece el **desacoplamiento** ya que se puede reutilizar los mismos conjuntos de argumentos en diferentes pruebas al no estar ligados los argumentos y la prueba.
+
+#### [Argument Conversion](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests-argument-conversion)
+
+JUnit Jupiter admite la conversión ampliada de tipos primitivos o [_"Widening Primitive Conversion"_](https://docs.oracle.com/javase/specs/jls/se8/html/jls-5.html#jls-5.1.2) para los argumentos proporcionados a `@ParameterizedTest`.
+
+La _"Widening Primitive Conversion" es un concepto de Java que se refiere a la conversión automática de un tipo de datos primitivo a otro tipo más amplio (de menor a mayor capacidad) sin pérdida de información:
+
+- **`byte`** ⇒ short, int, long, float, double
+
+- **`short`** ⇒ int, long, float, double
+
+- **`char`** ⇒ int, long, float, double
+
+- **`int`** ⇒ long, float, double
+
+- **`long`** ⇒ float, double
+
+- **`float`** ⇒ double
+
+En el contexto de JUnit, especialmente con pruebas parametrizadas, las conversiones ampliadas le permiten a JUnit manejar estas conversiones automáticamente al pasar argumentos a métodos de prueba, evitando la necesidad de conversión manual y reduciendo la posibilidad de errores.
+
+Las conversiones pueden ser **conversiones implícitas**. JUnit Jupiter proporciona una serie de convertidores de tipo implícitos integrados.
+
+```java
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class ImplicitConversionTest {
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 3, 4, 5})
+    void testWithImplicitConversion(long number) {
+        // JUnit maneja automáticamente la conversión de int a long
+        System.out.println(number);
+        assertTrue(number > 0);
+    }
+}
+```
+
+Además, JUnit Jupiter proporciona una serie de convertires implícitos de `String` a una variedad de tipos, tanto primitivos como clases relacionadas con fechas, UUID, etcétera... La lista completa se puede consultar en la [documentación oficial](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests-argument-conversion-implicit).
+
+Además de esta conversión implícita de `String` a los tipos de destino enumerados en la tabla, JUnit Jupiter también proporciona un mecanismo alternativo para la conversión automática de una cadena a un tipo de destino determinado si el tipo de destino declara exactamente un método de fábrica adecuado o un constructor de fábrica como definido a continuación:
+
+- **_"factory method"_**: un método estático no privado declarado en el tipo de destino que acepta un único argumento `String` y devuelve una instancia del tipo de destino. El nombre del método puede ser arbitrario y no necesita seguir ninguna convención particular.
+
+- **_"factory constructor"_**: un constructor no privado en el tipo de destino que acepta un único argumento `String`. Tenga en cuenta que el tipo de destino debe declararse como una clase de nivel superior o como una clase anidada estática.
+
+```java
+public class Book {
+
+    private final String title;
+
+    private Book(String title) {
+        this.title = title;
+    }
+
+    public static Book fromTitle(String title) {
+        return new Book(title);
+    }
+
+    public String getTitle() {
+        return this.title;
+    }
+}
+```
+
+De forma automática el argumento `Book` se creará invocando el método de fábrica `Book.fromTitle(String)` y pasando la cadena "42 Cats" como título del libro.
+
+```java
+@ParameterizedTest
+@ValueSource(strings = "42 Cats")
+void testWithImplicitFallbackArgumentConversion(Book book) {
+    assertEquals("42 Cats", book.getTitle());
+}
+```
+
+JUnit Jupiter también ofrece la posibilidad de la **conversión explícita**. Para ello se puede especificar explícitamente un `ArgumentConverter` para usar con un determinado parámetro usando la anotación `@ConvertWith`.
+
+#### [Argument Aggregation](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests-argument-aggregation)
+
+Es una característica avanzada de las pruebas parametrizadas en JUnit 5 que permite combinar múltiples parámetros de entrada en un solo objeto antes de pasar los valores al método de prueba.
+
+Esta técnica es útil cuando se tienen múltiples argumentos que representan una entidad lógica y se prefiere encapsular estos argumentos en un solo objeto.
+
+En tales casos, se puede utilizar un `ArgumentsAccessor` en lugar de varios parámetros, teniendo en cuenta que se aplica la conversión implícita de `String` a otros tipos vista anteriormente.
+
+```java
+@ParameterizedTest
+@CsvSource({
+    "Jane, Doe, F, 1990-05-20",
+    "John, Doe, M, 1990-10-22"
+})
+void testWithArgumentsAccessor(ArgumentsAccessor arguments) {
+    Person person = new Person(arguments.getString(0),
+                               arguments.getString(1),
+                               arguments.get(2, Gender.class),
+                               arguments.get(3, LocalDate.class));
+
+    if (person.getFirstName().equals("Jane")) {
+        assertEquals(Gender.F, person.getGender());
+    }
+    else {
+        assertEquals(Gender.M, person.getGender());
+    }
+    assertEquals("Doe", person.getLastName());
+    assertEquals(1990, person.getDateOfBirth().getYear());
+}
+```
+
+Además, es posible crear agregaciones personalizadas implementando la interfaz `ArgumentsAggregator`.
+
+#### [Customizing Display Names](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests-display-names)
+
+De forma predeterminada, el nombre mostrado en una invocación de prueba parametrizada contiene el índice de invocación y la representación `String` de todos los argumentos para esa invocación específica.
+
+Sin embargo, se puede personalizar los nombres para mostrar de invocaciones mediante el atributo `name` de la anotación `@ParameterizedTest`:
+
+```java
+@DisplayName("Display name of container")
+@ParameterizedTest(name = "{index} ==> the rank of ''{0}'' is {1}")
+@CsvSource({ "apple, 1", "banana, 2", "'lemon, lime', 3" })
+void testWithCustomDisplayNames(String fruit, int rank) {
+    // ...
+}
+```
+
+La ejecución de esta prueba parametrizada mostraría por consola:
+
+```txt
+Display name of container ✔
+├─ 1 ==> the rank of 'apple' is 1 ✔
+├─ 2 ==> the rank of 'banana' is 2 ✔
+└─ 3 ==> the rank of 'lemon, lime' is 3 ✔
+```
+
+El parámetro `name` es un patrón `MessageFormat`. Por lo tanto, una comilla simple (') debe representarse como una comilla simple doble ('') para poder mostrarse.
+
+La lista de _"placeholders"_ que se pueden utilizar:
+
+- **`{displayName}`**: el nombre para mostrar del método
+
+- **`{index}`**: el índice de invocación actual (basado en 1)
+
+- **`{arguments}`**: la lista completa de argumentos separados por comas
+
+- **`{argumentsWithNames}`**: la lista completa de argumentos separados por comas con nombres de parámetros
+
+- **`{0}, {1}, ...`**: un argumento individual
+
+Al utilizar `@MethodSource` o `@ArgumentsSource`, puede proporcionar nombres personalizados para los argumentos utilizando la API `Named`:
+
+```java
+@DisplayName("A parameterized test with named arguments")
+@ParameterizedTest(name = "{index}: {0}")
+@MethodSource("namedArguments")
+void testWithNamedArguments(File file) {
+}
+
+static Stream<Arguments> namedArguments() {
+    return Stream.of(
+        arguments(named("An important file", new File("path1"))),
+        arguments(named("Another file", new File("path2")))
+    );
+}
+```
+
+Cuya salida es:
+
+```txt
+A parameterized test with named arguments ✔
+├─ 1: An important file ✔
+└─ 2: Another file ✔
+```
+
+#### [Lifecycle and Interoperability](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests-lifecycle-interop)
+
+Cada invocación de una prueba parametrizada tiene **el mismo ciclo de vida** que un método `@Test` normal. Por ejemplo, los métodos `@BeforeEach` se ejecutarán antes de cada invocación.
 
 ### [Test Templates](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-templates)
 
