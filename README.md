@@ -1782,6 +1782,99 @@ Cada invocación de una prueba parametrizada tiene **el mismo ciclo de vida** qu
 
 ### [Test Templates](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-templates)
 
+Un método anotado con `@TestTemplate` no es un caso de prueba regular, sino más bien una plantilla para casos de prueba. Como tal, está diseñado para ser invocado múltiples veces, dependiendo del número de contextos de invocación devueltos por los proveedores registrados. Por lo tanto, debe usarse en conjunto con una extensión registrada de `TestTemplateInvocationContextProvider`.
+
+Cada invocación de un método de plantilla de prueba se comporta como la ejecución de un método `@Test` regular, con soporte completo para las mismas devoluciones de llamada del ciclo de vida y extensiones.
+
+Las _"Repeated Tests"_ y las _"Parameterized Tests"_ son especializaciones integradas de las _"Test Templates"_.
+
+### [Dynamic Tests](https://junit.org/junit5/docs/current/user-guide/#writing-tests-dynamic-tests)
+
+Los **_Dynamic Tests_** en JUnit 5 son una característica poderosa que permite definir pruebas de manera programática en tiempo de ejecución, en lugar de de manera estática como con los métodos anotados con `@Test`. Esto es particularmente útil cuando la cantidad de pruebas o los datos de prueba no son conocidos de antemano.
+
+Los tests dinámicos se anotan con `@TestFactory`. A diferencia de los métodos `@Test`, un método `@TestFactory` no es en sí mismo un caso de prueba sino una fábrica de casos de prueba.
+
+Técnicamente hablando, un método `@TestFactory` debe devolver un único `DynamicNode` o un `Stream`, `Collection`, `Iterable`, `Iterator` o array de instancias de `DynamicNode`.
+
+Las subclases instanciables de `DynamicNode` son `DynamicContainer` y `DynamicTest`. Las instancias de `DynamicContainer` se componen de un nombre para mostrar y una lista de nodos secundarios dinámicos, lo que permite la creación de jerarquías anidadas arbitrariamente de nodos dinámicos.
+
+Para crear un _"Dynamic Test"_, usas el método `DynamicTest.dynamicTest(String displayName, Executable executable)`, donde _"displayName"_ es una descripción legible de la prueba y _"executable"_ es el código que se ejecuta como la prueba.
+
+```java
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.function.Executable;
+
+import java.util.Arrays;
+import java.util.Collection;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class DynamicTestExample {
+
+    @TestFactory
+    Collection<DynamicTest> dynamicTests() {
+        return Arrays.asList(
+            DynamicTest.dynamicTest("Test 1", () -> assertTrue(isEven(2))),
+            DynamicTest.dynamicTest("Test 2", () -> assertTrue(isEven(4))),
+            DynamicTest.dynamicTest("Test 3", () -> assertTrue(isEven(6)))
+        );
+    }
+
+    private boolean isEven(int number) {
+        return number % 2 == 0;
+    }
+}
+```
+
+### [Timeouts](https://junit.org/junit5/docs/current/user-guide/#writing-tests-declarative-timeouts)
+
+La anotación [`@Timeout`](https://junit.org/junit5/docs/current/api/org.junit.jupiter.api/org/junit/jupiter/api/Timeout.html) permite declarar que una prueba, una fábrica de pruebas, una plantilla de prueba o un método de ciclo de vida deben fallar si su tiempo de ejecución excede una duración determinada. La unidad de tiempo para la duración predeterminada es segundos, pero es configurable.
+
+```java
+class TimeoutDemo {
+
+    @BeforeEach
+    @Timeout(5)
+    void setUp() {
+        // fails if execution time exceeds 5 seconds
+    }
+
+    @Test
+    @Timeout(value = 500, unit = TimeUnit.MILLISECONDS)
+    void failsIfExecutionTimeExceeds500Milliseconds() {
+        // fails if execution time exceeds 500 milliseconds
+    }
+
+    @Test
+    @Timeout(value = 500, unit = TimeUnit.MILLISECONDS, threadMode = ThreadMode.SEPARATE_THREAD)
+    void failsIfExecutionTimeExceeds500MillisecondsInSeparateThread() {
+        // fails if execution time exceeds 500 milliseconds, the test code is executed in a separate thread
+    }
+
+}
+```
+
+Para aplicar el mismo tiempo de espera a todos los métodos de prueba dentro de una clase de prueba y a todas sus clases `@Nested`, puede declarar la anotación `@Timeout` **a nivel de clase**. Luego se aplicará a todos los métodos de prueba, fábrica de pruebas y plantilla de prueba dentro de esa clase y sus clases anidadas, a menos que lo anule una anotación `@Timeout` en un método específico o clase anidada.
+
+La anotación `@Timeout` en JUnit 5 se puede configurar mediante **parámetros de configuración**. Esto es útil para establecer un tiempo de espera global o específico para las pruebas sin tener que especificarlo en cada prueba individualmente.
+
+Se puede establecer estas propiedades en un archivo de configuración (_"junit-platform.properties"_) o pasarlas como parámetros del sistema.
+
+Algunos de los parámetros son:
+
+- _"junit.jupiter.execution.timeout.default"_
+
+- _"junit.jupiter.execution.timeout.test.method.default"_
+
+- _"junit.jupiter.execution.timeout.testable.method.default"_
+
+### [Parallel Execution](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parallel-execution)
+
+TODO
+
+### [Built-in Extensions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-built-in-extensions)
+
 TODO
 
 ---
@@ -1790,6 +1883,7 @@ TODO
 
 - <https://junit.org/junit5>
 - <https://github.com/junit-team/junit5-samples>
+- <https://junit.org/junit5/docs/current/api/>
 - <https://www.baeldung.com/junit>
 - <https://www.tutorialspoint.com/junit/index.htm>
 - <https://www.vogella.com/tutorials/JUnit/article.html>
