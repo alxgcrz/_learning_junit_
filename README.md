@@ -1871,9 +1871,235 @@ Algunos de los parámetros son:
 
 ### [Parallel Execution](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parallel-execution)
 
-TODO
+De forma predeterminada, las pruebas de JUnit Jupiter se ejecutan **secuencialmente en un solo hilo**.
+
+La ejecución de pruebas en paralelo (por ejemplo, para acelerar la ejecución) está disponible como característica opcional desde la versión 5.3. Para activar la ejecución en paralelo se hace con el parámetro de configuración `junit.jupiter.execution.parallel.enabled = true` en el fichero de configuración _"junit-platform.properties"_.
+
+Sin embargo, habilitar esta propiedad es solo el primer paso necesario para ejecutar pruebas en paralelo. Si está habilitado, las clases y métodos de prueba se seguirán ejecutando secuencialmente de forma predeterminada.
+
+La ejecución simultánea o no de un nodo en el árbol de prueba está controlada por su modo de ejecución. Están disponibles los dos modos siguientes:
+
+- **_SAME_THREAD_**: fuerza la ejecución en el mismo hilo utilizado por el padre.
+
+- **_CONCURRENT_**: ejecución simultáneamente a menos que un bloqueo de recursos fuerce la ejecución en el mismo hilo.
+
+Para configurar el modo de ejecución se hace con el parámetro `junit.jupiter.execution.parallel.mode.default = concurrent` en el fichero de configuración _"junit-platform.properties"_.
+
+Por tanto el fichero quedaría así:
+
+```txt
+junit.jupiter.execution.parallel.enabled = true
+junit.jupiter.execution.parallel.mode.default = concurrent
+```
 
 ### [Built-in Extensions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-built-in-extensions)
+
+El _JUnit Jupiter API artifact_ incluye algunas implementaciones de extensiones orientadas al usuario que se consideran tan útiles en general que los usuarios no deberían tener que agregar otra dependencia.
+
+#### [The TempDirectory Extension](https://junit.org/junit5/docs/current/user-guide/#writing-tests-built-in-extensions-TempDirectory)
+
+La extensión **_TempDirectory_** incorporada se utiliza para **crear y limpiar un directorio temporal** para una prueba individual o para todas las pruebas de una clase de prueba. Está registrado por defecto.
+
+Para usarlo, anote un campo no final y no asignado de tipo `java.nio.file.Path` o `java.io.File` con [`@TempDir`](https://junit.org/junit5/docs/current/api/org.junit.jupiter.api/org/junit/jupiter/api/io/TempDir.html).
+
+Otra forma es agregar un parámetro de tipo `java.nio.file.Path` o `java.io.File` anotado con [`@TempDir`](https://junit.org/junit5/docs/current/api/org.junit.jupiter.api/org/junit/jupiter/api/io/TempDir.html) a un método de ciclo de vida o método de prueba.
+
+```java
+// A test method that requires a temporary directory
+@Test
+void writeItemsToFile(@TempDir Path tempDir) throws IOException {
+    Path file = tempDir.resolve("test.txt");
+
+    new ListWriter(file).write("a", "b", "c");
+
+    assertEquals(singletonList("a,b,c"), Files.readAllLines(file));
+}
+```
+
+La anotación `@TempDir` no es compatible con los parámetros del constructor. Para disponer de una referencia única a un directorio temporal entre los métodos del ciclo de vida y el método de prueba actual, se utiliza la inyección de campos anotando un campo de instancia con `@TempDir`:
+
+```java
+class SharedTempDirectoryDemo {
+
+    @TempDir
+    static Path sharedTempDir;
+
+    @Test
+    void writeItemsToFile() throws IOException {
+        Path file = sharedTempDir.resolve("test.txt");
+
+        new ListWriter(file).write("a", "b", "c");
+
+        assertEquals(singletonList("a,b,c"), Files.readAllLines(file));
+    }
+
+    @Test
+    void anotherTestThatUsesTheSameTempDir() {
+        // use sharedTempDir
+    }
+
+}
+```
+
+La anotación `@TempDir` tiene un atributo de limpieza opcional que se puede establecer en _"NEVER"_, _"ON_SUCCESS"_ o _"ALWAYS"_.
+
+Si el modo de limpieza está configurado en _"NEVER"_, los directorios temporales no se eliminan una vez completada la prueba. Si se establece en _"ON_SUCCESS"_, los directorios temporales se eliminan solo después de que una prueba se complete con éxito.
+
+```java
+// A test class with a temporary directory that doesn’t get cleaned up
+class CleanupModeDemo {
+
+    @Test
+    void fileTest(@TempDir(cleanup = ON_SUCCESS) Path tempDir) {
+        // perform test
+    }
+
+}
+```
+
+## [Running Tests](https://junit.org/junit5/docs/current/user-guide/#running-tests)
+
+### [Build Support](https://junit.org/junit5/docs/current/user-guide/#running-tests-build)
+
+#### [Gradle](https://junit.org/junit5/docs/current/user-guide/#running-tests-build-gradle)
+
+A partir de la [versión 4.6](https://docs.gradle.org/4.6/release-notes.html), Gradle proporciona **soporte nativo** para ejecutar pruebas en la plataforma JUnit.
+
+Para habilitarlo, debe especificar `useJUnitPlatform()` dentro de una declaración de tarea _"test"_ en el fichero _"build.gradle"_:
+
+```gradle
+test {
+    useJUnitPlatform()
+}
+```
+
+También se admite el filtrado por etiquetas, expresiones de etiquetas o _engines_:
+
+```gradle
+test {
+    useJUnitPlatform {
+        includeTags("fast", "smoke & feature-a")
+        // excludeTags("slow", "ci")
+        includeEngines("junit-jupiter")
+        // excludeEngines("junit-vintage")
+    }
+}
+```
+
+A menos que se esté utilizando Spring Boot, que define su propia forma de gestionar las dependencias, se recomienda utilizar la BOM de la plataforma JUnit para alinear las versiones de todos los artefactos JUnit 5.
+
+```gradle
+dependencies {
+    testImplementation(platform("org.junit:junit-bom:5.10.3"))
+}
+```
+
+El uso de BOM permite omitir la versión al declarar dependencias en todos los artefactos con los ID de grupo **_"org.junit.platform"_**, **_"org.junit.jupiter"_** y **_"org.junit.vintage"_**.
+
+Puede proporcionar parámetros de configuración dentro del script de compilación a través de las propiedades del sistema o mediante el archivo _"junit-platform.properties"_:
+
+```gradle
+test {
+    // ...
+    systemProperty("junit.jupiter.conditions.deactivate", "*")
+    systemProperty("junit.jupiter.extensions.autodetection.enabled", true)
+    systemProperty("junit.jupiter.testinstance.lifecycle.default", "per_class")
+    // ...
+}
+```
+
+Para ejecutar cualquier prueba, debe haber una implementación de `TestEngine` en el classpath.
+
+Para configurar la compatibilidad con pruebas basadas en JUnit Jupiter, configure una dependencia `testImplementation` en el artefacto JUnit Jupiter que agrega dependencias:
+
+```gradle
+dependencies {
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.3") // version can be omitted when using the BOM
+}
+```
+
+#### [Maven](https://junit.org/junit5/docs/current/user-guide/#running-tests-build-maven)
+
+A partir de la [versión 2.22.0](https://issues.apache.org/jira/browse/SUREFIRE-1330), **Maven Surefire** y **Maven Failsafe** brindan soporte nativo para ejecutar pruebas en la plataforma JUnit.
+
+**Maven Surefire** es el plugin principal para ejecutar pruebas unitarias en un proyecto Maven. Es utilizado en la fase de `test` del ciclo de vida de Maven.
+
+**Maven Failsafe** es un plugin diseñado para ejecutar pruebas de integración. Se utiliza en las fases `integration-test` y `verify` del ciclo de vida de Maven.
+
+A menos que esté utilizando Spring Boot, que define su propia forma de gestionar las dependencias, se recomienda utilizar la BOM de la plataforma JUnit para alinear las versiones de todos los artefactos JUnit 5:
+
+```xml
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.junit</groupId>
+            <artifactId>junit-bom</artifactId>
+            <version>5.10.3</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+```
+
+El uso de BOM permite omitir la versión al declarar dependencias en todos los artefactos con los ID de grupo **_"org.junit.platform"_**, **_"org.junit.jupiter"_** y **_"org.junit.vintage"_**.
+
+Para que Maven Surefire o Maven Failsafe ejecute cualquier prueba, se debe agregar al menos una implementación de `TestEngine` al classpath de prueba.
+
+Para configurar la compatibilidad con pruebas basadas en JUnit Jupiter, configure las dependencias con alcance de prueba en la API de JUnit Jupiter y la implementación JUnit Jupiter TestEngine similar a la siguiente.
+
+```xml
+<!-- ... -->
+<dependencies>
+    <!-- ... -->
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>5.10.3</version> <!-- can be omitted when using the BOM -->
+        <scope>test</scope>
+    </dependency>
+    <!-- ... -->
+</dependencies>
+<build>
+    <plugins>
+        <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.1.2</version>
+        </plugin>
+        <plugin>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <version>3.1.2</version>
+        </plugin>
+    </plugins>
+</build>
+<!-- ... -->
+```
+
+Puede establecer los parámetros de configuración de la plataforma JUnit proporcionando pares clave-valor utilizando la sintaxis del archivo de propiedades de Java o mediante el archivo _"junit-platform.properties"_.
+
+```xml
+<!-- ... -->
+<build>
+    <plugins>
+        <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.1.2</version>
+            <configuration>
+                <properties>
+                    <configurationParameters>
+                        junit.jupiter.conditions.deactivate = *
+                        junit.jupiter.extensions.autodetection.enabled = true
+                        junit.jupiter.testinstance.lifecycle.default = per_class
+                    </configurationParameters>
+                </properties>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+<!-- ... -->
+```
+
+### [Configuration Parameters](https://junit.org/junit5/docs/current/user-guide/#running-tests-config-params)
 
 TODO
 
@@ -1884,6 +2110,7 @@ TODO
 - <https://junit.org/junit5>
 - <https://github.com/junit-team/junit5-samples>
 - <https://junit.org/junit5/docs/current/api/>
+- <https://maven.apache.org/surefire/maven-surefire-plugin/examples/junit-platform.html>
 - <https://www.baeldung.com/junit>
 - <https://www.tutorialspoint.com/junit/index.htm>
 - <https://www.vogella.com/tutorials/JUnit/article.html>
