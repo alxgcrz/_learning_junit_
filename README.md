@@ -1,7 +1,5 @@
 # JUnit 5
 
-... EN DESARROLLO ...
-
 ## Introducción
 
 JUnit es un framework Java para implementar test en Java. A diferencia de versiones anteriores, JUnit 5 se compone de tres sub-proyectos:
@@ -2026,7 +2024,11 @@ A partir de la [versión 2.22.0](https://issues.apache.org/jira/browse/SUREFIRE-
 
 **Maven Failsafe** es un plugin diseñado para ejecutar pruebas de integración. Se utiliza en las fases `integration-test` y `verify` del ciclo de vida de Maven.
 
-A menos que esté utilizando Spring Boot, que define su propia forma de gestionar las dependencias, se recomienda utilizar la BOM de la plataforma JUnit para alinear las versiones de todos los artefactos JUnit 5:
+##### Aligning dependency versions
+
+A menos que esté utilizando Spring Boot, que define su propia forma de gestionar las dependencias, se **recomienda utilizar la BOM de la plataforma JUnit para alinear las versiones** de todos los artefactos JUnit 5.
+
+Para usar el BOM de JUnit, se agrega en la sección `<dependencyManagement>` del `pom.xml`:
 
 ```xml
 <dependencyManagement>
@@ -2042,7 +2044,42 @@ A menos que esté utilizando Spring Boot, que define su propia forma de gestiona
 </dependencyManagement>
 ```
 
+El **BOM (_Bill of Materials_)** de JUnit es una herramienta que facilita la gestión de las versiones de las dependencias de JUnit en proyectos Maven. JUnit proporciona un BOM en forma de un archivo **POM (_Project Object Model_)** especial que lista todas las versiones recomendadas y compatibles de las dependencias de JUnit.
+
 El uso de BOM permite omitir la versión al declarar dependencias en todos los artefactos con los ID de grupo **_"org.junit.platform"_**, **_"org.junit.jupiter"_** y **_"org.junit.vintage"_**.
+
+Es decir, después de incluir el **BOM** de JUnit en el `pom.xml`, se puede agregar dependencias de JUnit sin especificar explícitamente la versión, utilizando solo el `groupId` y `artifactId`:
+
+```xml
+<!-- ... -->
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.junit</groupId>
+            <artifactId>junit-bom</artifactId>
+            <version>5.10.2</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<dependencies>
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-params</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+<!-- ... -->    
+```
+
+##### Configuring Test Engines
 
 Para que Maven Surefire o Maven Failsafe ejecute cualquier prueba, se debe agregar al menos una implementación de `TestEngine` al classpath de prueba.
 
@@ -2075,7 +2112,86 @@ Para configurar la compatibilidad con pruebas basadas en JUnit Jupiter, configur
 <!-- ... -->
 ```
 
-Puede establecer los parámetros de configuración de la plataforma JUnit proporcionando pares clave-valor utilizando la sintaxis del archivo de propiedades de Java o mediante el archivo _"junit-platform.properties"_.
+Para ejecutar pruebas basadas en JUnit 4 junto con pruebas de JUnit Jupiter utilizando Maven Surefire y Maven Failsafe, necesitas configurar las dependencias adecuadas y especificar el uso del motor de pruebas JUnit Vintage:
+
+```xml
+<!-- ... -->
+<dependencies>
+    <!-- ... -->
+    <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.13.2</version>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.junit.vintage</groupId>
+        <artifactId>junit-vintage-engine</artifactId>
+        <version>5.10.3</version> <!-- can be omitted when using the BOM -->
+        <scope>test</scope>
+    </dependency>
+    <!-- ... -->
+</dependencies>
+<!-- ... -->
+<build>
+    <plugins>
+        <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.1.2</version>
+        </plugin>
+        <plugin>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <version>3.1.2</version>
+        </plugin>
+    </plugins>
+</build>
+<!-- ... -->
+```
+
+##### Filtering by Test Class Names
+
+El plugin Maven Surefire escaneará clases de prueba cuyos nombres completamente calificados coincidan con los siguientes patrones:
+
+- `**/Test*.java`
+
+- `**/*Test.java`
+
+- `**/*Tests.java`
+
+- `**/*TestCase.java`
+
+Además, por defecto, excluirá todas las clases anidadas (incluyendo clases miembro estáticas).
+
+##### Filtering by Tags
+
+Puedes filtrar tests por etiquetas o expresiones de etiquetas utilizando las siguientes propiedades de configuración.
+
+- Para incluir etiquetas o expresiones de etiquetas, utiliza la propiedad `groups`.
+
+- Para excluir etiquetas o expresiones de etiquetas, utiliza la propiedad `excludedGroups`.
+
+```xml
+
+
+<!-- ... -->
+<build>
+    <plugins>
+        <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.1.2</version>
+            <configuration>
+                <groups>acceptance | !feature-a</groups>
+                <excludedGroups>integration, regression</excludedGroups>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+<!-- ... -->
+```
+
+##### Configuration Parameters
+
+Puede establecer los **parámetros de configuración** de la plataforma JUnit proporcionando pares clave-valor utilizando la sintaxis del archivo de propiedades de Java o mediante el archivo _"junit-platform.properties"_.
 
 ```xml
 <!-- ... -->
@@ -2099,9 +2215,79 @@ Puede establecer los parámetros de configuración de la plataforma JUnit propor
 <!-- ... -->
 ```
 
+### [Console Launcher](https://junit.org/junit5/docs/current/user-guide/#running-tests-console-launcher)
+
+El `ConsoleLauncher` es una aplicación de línea de comandos en Java que te permite lanzar la Plataforma JUnit desde la consola. Por ejemplo, puede usarse para ejecutar pruebas de JUnit Vintage y JUnit Jupiter y mostrar los resultados de la ejecución de las pruebas en la consola.
+
+Un ejecutable `junit-platform-console-standalone-1.10.3.jar` con todas las dependencias incluidas se publica en el repositorio [Maven Central](https://search.maven.org/) bajo el directorio [`junit-platform-console-standalone`](https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone). Por lo tanto, para poder ejecutar tests mediante el `ConsoleLauncher` hay que **descargar el jar**.
+
+Por ejemplo, para ejecutar los tests mediante la consola `$ java -jar junit-platform-console-standalone-1.10.3.jar execute <OPTIONS>`
+
 ### [Configuration Parameters](https://junit.org/junit5/docs/current/user-guide/#running-tests-config-params)
 
-TODO
+Los **_"Configuration Parameters"_** son pares clave-valor basados ​​en texto que se pueden proporcionar a los motores de prueba que se ejecutan en la plataforma JUnit a través de uno de los siguientes mecanismos:
+
+1. Los métodos `configurationParameter()` y `configurationParameters()` en el `LauncherDiscoveryRequestBuilder` se utilizan para construir una solicitud que se suministra a la API de `Launcher`. Al ejecutar pruebas a través de una de las herramientas proporcionadas por la Plataforma JUnit, puedes especificar los parámetros de configuración de la siguiente manera:
+  
+    1. [Console Launcher](#console-launcher)
+  
+    1. [Gradle](#gradle)
+
+    1. [Maven Surefire Provider](#maven)
+
+1. Propiedades del sistema JVM
+
+1. El archivo de configuración de la Plataforma JUnit: un archivo llamado `junit-platform.properties` en la raíz del classpath que sigue las reglas de sintaxis de un archivo de propiedades de Java.
+
+Los parámetros de configuración se buscan en el orden exacto definido anteriormente.
+
+Una lista de los parámetros de configuración puede consultarse en el [javadoc de JUnit](https://junit.org/junit5/docs/current/api/constant-values.html).
+
+### [Tags](https://junit.org/junit5/docs/current/user-guide/#running-tests-tags)
+
+Las etiquetas o _"tags"_ son un concepto de la Plataforma JUnit utilizado para marcar y filtrar pruebas.
+
+El modelo de programación para añadir etiquetas a contenedores y pruebas está definido por el framework de pruebas. Por ejemplo, en pruebas basadas en JUnit Jupiter, se debe utilizar la anotación `@Tag` mientras que para pruebas basadas en JUnit 4, el motor Vintage mapea las anotaciones `@Category` a etiquetas.
+
+Las reglas que deben cumplir estas etiquetas:
+
+- Una etiqueta no debe ser `null` ni estar en blanco
+
+- Una etiqueta recortada no debe contener espacios en blanco.
+
+- Una etiqueta recortada no debe contener caracteres de control ISO.
+
+- Una etiqueta recortada no debe contener ninguno de los siguientes caracteres reservados.
+
+  - `,`: coma
+  
+  - `(`: paréntesis izquierdo
+  
+  - `)`: paréntesis derecho
+  
+  - `|`: barra vertical
+  
+  - `!`: signo de exclamación
+
+#### [Tags Expressions](https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-expressions)
+
+Las expresiones de etiqueta son expresiones booleanas con los operadores `!`, `&` y `|`. Además, se pueden utilizar los paréntesis `(` y `)` para ajustar la precedencia de los operadores.
+
+Dos expresiones especiales son compatibles: `any()` y `none()`, que seleccionan todas las pruebas con cualquier etiqueta y todas las pruebas sin ninguna etiqueta, respectivamente. Estas expresiones especiales pueden combinarse con otras expresiones de la misma manera que las etiquetas normales.
+
+## [Dependency Metadata](https://junit.org/junit5/docs/current/user-guide/#dependency-metadata)
+
+Los artefactos para versiones finales y hitos se despliegan en [Maven Central](https://search.maven.org/), mientras que los artefactos snapshot se despliegan en el [repositorio de snapshots de Sonatype](https://oss.sonatype.org/content/repositories/snapshots):
+
+- [JUnit Platform](https://junit.org/junit5/docs/current/user-guide/#dependency-metadata-junit-platform)
+
+- [JUnit Jupiter](https://junit.org/junit5/docs/current/user-guide/#dependency-metadata-junit-jupiter)
+
+- [JUnit Vintage](https://junit.org/junit5/docs/current/user-guide/#dependency-metadata-junit-vintage)
+
+- [Bill of Materials (BOM)](https://junit.org/junit5/docs/current/user-guide/#dependency-metadata-junit-bom)
+
+- [Dependencies](https://junit.org/junit5/docs/current/user-guide/#dependency-metadata-dependencies)
 
 ---
 
