@@ -1605,17 +1605,17 @@ JUnit Jupiter admite la conversión ampliada de tipos primitivos o [_"Widening P
 
 La _"Widening Primitive Conversion" es un concepto de Java que se refiere a la conversión automática de un tipo de datos primitivo a otro tipo más amplio (de menor a mayor capacidad) sin pérdida de información:
 
-- **`byte`** ⇒ short, int, long, float, double
+- **`byte`** ➜ short, int, long, float, double
 
-- **`short`** ⇒ int, long, float, double
+- **`short`** ➜ int, long, float, double
 
-- **`char`** ⇒ int, long, float, double
+- **`char`** ➜ int, long, float, double
 
-- **`int`** ⇒ long, float, double
+- **`int`** ➜ long, float, double
 
-- **`long`** ⇒ float, double
+- **`long`** ➜ float, double
 
-- **`float`** ⇒ double
+- **`float`** ➜ double
 
 En el contexto de JUnit, especialmente con pruebas parametrizadas, las conversiones ampliadas le permiten a JUnit manejar estas conversiones automáticamente al pasar argumentos a métodos de prueba, evitando la necesidad de conversión manual y reduciendo la posibilidad de errores.
 
@@ -2171,8 +2171,6 @@ Puedes filtrar tests por etiquetas o expresiones de etiquetas utilizando las sig
 - Para excluir etiquetas o expresiones de etiquetas, utiliza la propiedad `excludedGroups`.
 
 ```xml
-
-
 <!-- ... -->
 <build>
     <plugins>
@@ -2259,15 +2257,15 @@ Las reglas que deben cumplir estas etiquetas:
 
 - Una etiqueta recortada no debe contener ninguno de los siguientes caracteres reservados.
 
-  - `,`: coma
+  - `,` ➜ coma
   
-  - `(`: paréntesis izquierdo
+  - `(` ➜ paréntesis izquierdo
   
-  - `)`: paréntesis derecho
+  - `)` ➜ paréntesis derecho
   
-  - `|`: barra vertical
+  - `|` ➜ barra vertical
   
-  - `!`: signo de exclamación
+  - `!` ➜ signo de exclamación
 
 #### [Tags Expressions](https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-expressions)
 
