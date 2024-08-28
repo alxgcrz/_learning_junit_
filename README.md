@@ -2,7 +2,7 @@
 
 ## Introducción
 
-JUnit es un framework Java para implementar test en Java. A diferencia de versiones anteriores, JUnit 5 se compone de tres sub-proyectos:
+[JUnit](https://junit.org/junit5/docs/current/user-guide/#overview-what-is-junit-5) es un framework Java para implementar test en Java. A diferencia de versiones anteriores, JUnit 5 se compone de tres sub-proyectos:
 
 - **JUnit Platform**. Sirve como base sobre la cual se pueden ejecutar diferentes frameworks de pruebas. Es la plataforma que inicia el motor de pruebas y ejecuta las pruebas. A su vez se compone de:
 
@@ -17,8 +17,6 @@ JUnit es un framework Java para implementar test en Java. A diferencia de versio
 - **JUnit Vintage**: proporciona compatibilidad con versiones anteriores, permitiendo que las pruebas escritas con JUnit 3 y JUnit 4 se ejecuten en JUnit 5. Requiere que JUnit 4.12 esté presente en el class path o el module path.
 
 JUnit 5 requiere **Java 8 (o superior)**.
-
-[Más información](https://junit.org/junit5/docs/current/user-guide/#overview-what-is-junit-5)
 
 ## [Writing Tests](https://junit.org/junit5/docs/current/user-guide/#writing-tests)
 
@@ -91,7 +89,7 @@ JUnit se basa en [anotaciones](https://junit.org/junit5/docs/current/user-guide/
 
 #### [Meta-Annotations and Composed Annotations](https://junit.org/junit5/docs/current/user-guide/#writing-tests-meta-annotations)
 
-Las anotaciones de JUnit Jupiter se pueden utilizar como meta-anotaciones. Eso significa que se pueden definir anotaciones compuestas personalizadas que heredarán automáticamente la semántica de las meta-anotaciones.
+Las anotaciones de JUnit Jupiter se pueden utilizar como **meta-anotaciones**. Eso significa que se pueden definir anotaciones compuestas personalizadas que heredarán automáticamente la semántica de las meta-anotaciones.
 
 Por ejemplo, en vez de copiar y pegar la anotación `@Tag("fast")` (que permite etiquetar y agrupar pruebas), es posible crear una anotación personalizada como por ejemplo `@Fast`:
 
@@ -109,7 +107,7 @@ import org.junit.jupiter.api.Tag;
 public @interface Fast { }
 ```
 
-Esta anotación sería equivalente y podría utilizarse cualquiera de las dos anotaciones:
+Esta meta-anotación `@Fast` sería equivalente a `@Tag("fast")` y podría utilizarse cualquiera de las dos anotaciones:
 
 ```java
 @Fast
@@ -125,7 +123,7 @@ void otherFastTest() {
 }
 ```
 
-Incluso se podría ir un paso más allá introduciendo una anotación `@FastTest` personalizada que se puede usar como reemplazo directo de `@Tag("fast")` y `@Test`:
+Incluso se podría ir un paso más allá introduciendo una meta-anotación `@FastTest` personalizada que se puede usar como reemplazo directo de `@Tag("fast")` y `@Test`:
 
 ```java
 import java.lang.annotation.ElementType;
@@ -161,7 +159,7 @@ Los métodos de prueba y los métodos de ciclo de vida pueden ser declarados loc
 
 No es necesario que las clases de prueba, los métodos de prueba y los métodos de ciclo de vida sean `public`, pero **no deben ser privados**.
 
-Generalmente se recomienda omitir el modificador `public` para clases de prueba, métodos de prueba y métodos de ciclo de vida a menos que exista una razón técnica para hacerlo.
+Generalmente se recomienda **omitir** el modificador `public` para clases de prueba, métodos de prueba y métodos de ciclo de vida a menos que exista una razón técnica para hacerlo.
 
 Una clase estándard de prueba con todos los métodos del ciclo de vida:
 
@@ -220,7 +218,7 @@ class StandardTests {
 
 ### [Display Names](https://junit.org/junit5/docs/current/user-guide/#writing-tests-display-names)
 
-Las clases de prueba y los métodos de prueba pueden declarar nombres personalizados mediante `@DisplayName`, con espacios, caracteres especiales e incluso emojis, que se mostrarán en los informes de prueba y por los ejecutores de prueba y los IDE:
+Las clases de prueba y los métodos de prueba pueden declarar **nombres personalizados** mediante `@DisplayName`, con espacios, caracteres especiales e incluso emojis, que se mostrarán en los informes de prueba y por los ejecutores de prueba y los IDE:
 
 ```java
 import org.junit.jupiter.api.DisplayName;
@@ -252,9 +250,9 @@ class DisplayNameDemo {
 
 #### [Display Name Generators](https://junit.org/junit5/docs/current/user-guide/#writing-tests-display-name-generator)
 
-JUnit Jupiter admite generadores de nombres personalizados que se pueden configurar mediante la anotación `@DisplayNameGeneration`. Los valores proporcionados a través de anotaciones `@DisplayName` siempre tienen prioridad sobre los nombres generados por `@DisplayNameGenerator`.
+JUnit Jupiter admite [**generadores de nombres personalizados**](https://junit.org/junit5/docs/current/user-guide/#writing-tests-display-name-generator) que se pueden configurar mediante la anotación `@DisplayNameGeneration`. Los valores proporcionados a través de anotaciones `@DisplayName` siempre tienen prioridad sobre los nombres generados por `@DisplayNameGenerator`.
 
-Esta anotación se utiliza para configurar una estrategia global de generación de nombres de visualización (_'display names'_) para todas las pruebas en una clase de prueba. Esto es útil cuando se requiere aplicar una convención de nombres de manera consistente sin tener que especificar `@DisplayName` individualmente en cada método de prueba.
+Esta anotación se utiliza para configurar una estrategia global de generación de nombres de visualización o _'display names'_ para todas las pruebas en una clase de prueba. Esto es útil cuando se requiere aplicar una convención de nombres de manera consistente sin tener que especificar `@DisplayName` individualmente en cada método de prueba.
 
 ### [Assertions](https://junit.org/junit5/docs/current/user-guide/#writing-tests-assertions)
 
