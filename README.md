@@ -2276,23 +2276,24 @@ Dos expresiones especiales son compatibles: `any()` y `none()`, que seleccionan 
 Los artefactos para versiones finales y hitos se despliegan en [Maven Central](https://search.maven.org/), mientras que los artefactos snapshot se despliegan en el [repositorio de snapshots de Sonatype](https://oss.sonatype.org/content/repositories/snapshots):
 
 - [JUnit Platform](https://junit.org/junit5/docs/current/user-guide/#dependency-metadata-junit-platform)
-
 - [JUnit Jupiter](https://junit.org/junit5/docs/current/user-guide/#dependency-metadata-junit-jupiter)
-
 - [JUnit Vintage](https://junit.org/junit5/docs/current/user-guide/#dependency-metadata-junit-vintage)
-
 - [Bill of Materials (BOM)](https://junit.org/junit5/docs/current/user-guide/#dependency-metadata-junit-bom)
-
 - [Dependencies](https://junit.org/junit5/docs/current/user-guide/#dependency-metadata-dependencies)
 
 ---
 
-## Referencias
+## Enlaces
 
-- <https://junit.org/junit5>
+### JUnit
+
+- 🔸 [JUnit 5](https://junit.org/junit5)
 - <https://github.com/junit-team/junit5-samples>
 - <https://junit.org/junit5/docs/current/api/>
 - <https://maven.apache.org/surefire/maven-surefire-plugin/examples/junit-platform.html>
+
+### JUnit- Learning
+
 - <https://www.baeldung.com/junit>
 - <https://www.tutorialspoint.com/junit/index.htm>
 - <https://www.vogella.com/tutorials/JUnit/article.html>
